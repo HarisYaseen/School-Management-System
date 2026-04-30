@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Fees</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-[1600px] mx-auto space-y-8">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border-2 border-prime/10 flex items-center gap-5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-6 -top-6 text-6xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500"><i class="fa-solid fa-file-invoice-dollar text-2xl"></i></div>
+                        <div><p class="text-slate-400 font-bold text-xs uppercase tracking-wider">Total Charges</p><p class="text-2xl font-black text-slate-800" id="total-charges-val">Rs. 0</p></div>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border-2 border-prime/10 flex items-center gap-5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-6 -top-6 text-6xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500"><i class="fa-solid fa-money-bill-1-wave text-2xl"></i></div>
+                        <div><p class="text-slate-400 font-bold text-xs uppercase tracking-wider">Total Paid</p><p class="text-2xl font-black text-slate-800" id="total-paid-val">Rs. 0</p></div>
+                    </div>
+                    <div class="bg-prime p-8 rounded-[2rem] shadow-sm flex items-center gap-5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-6 -top-6 text-6xl text-white/5 -rotate-12 pointer-events-none"></i>
+                        <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-white"><i class="fa-solid fa-scale-balanced text-2xl"></i></div>
+                        <div>
+                            <p class="text-white/50 font-bold text-xs uppercase tracking-wider">Net Balance</p>
+                            <p class="text-2xl font-black text-white" id="net-balance-val">Rs. 0</p>
+                            <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-1"><span id="total-records-count">0</span> Transactions</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="bg-white rounded-[2rem] shadow-sm border-2 border-prime/10 overflow-hidden relative">
+                    <i class="fa-solid fa-graduation-cap absolute -right-12 -top-12 text-[12rem] text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <div class="flex justify-between items-center p-8 border-b border-slate-50">
+                        <div class="flex items-center gap-4">
+                            <div id="ledger-student-pic" class="hidden w-12 h-12 rounded-2xl bg-prime/10 overflow-hidden flex items-center justify-center border-2 border-white shadow-sm"></div>
+                            <div>
+                                <h3 class="text-xl font-black text-slate-800" id="ledger-student-name-h">Student Ledger</h3>
+                                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5" id="ledger-student-meta">Select a student to view history</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="relative w-80 group">
+                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                                <input type="text" id="student-search" onkeyup="searchStudentsMain()" class="premium-input bg-white pl-11 pr-4 py-3 rounded-xl text-xs font-medium w-full" placeholder="Search student..." autocomplete="off">
+                                <div id="main-student-results" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl z-[100] max-h-64 overflow-y-auto py-2"></div>
+                            </div>
+                             <button id="print-challan-btn" onclick="printChallan()" class="hidden bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/10">
+                                <i class="fa-solid fa-receipt"></i> Print Challan
+                            </button>
+                            <button onclick="openBulkModal()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-200 transition-all">
+                                <i class="fa-solid fa-layer-group"></i> Bulk Print
+                            </button>
+                            <button onclick="openFeeModal('charge')" class="bg-prime text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-700 transition-all shadow-lg shadow-prime/10">
+                                <i class="fa-solid fa-file-invoice"></i> New Charge
+                            </button>
+                            <button onclick="openFeeModal('payment')" class="bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/10">
+                                <i class="fa-solid fa-cash-register"></i> Add Payment
+                            </button>
+                        </div>
+                    </div>
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider w-16">#</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Date</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Description</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Debit (Charges)</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Credit (Paid)</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Balance</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fees-table" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="fee-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800" id="modal-title">New Transaction</h3>
+                <button onclick="document.getElementById('fee-modal').classList.add('hidden')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form onsubmit="saveFee(event)" class="space-y-4">
+                <input type="hidden" id="f-id">
+                <input type="hidden" id="f-entry-type"> <!-- charge or payment -->
+                <div id="target-toggle-container" class="hidden flex justify-between items-center bg-slate-50 p-2 rounded-xl">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider ml-2">Apply To</label>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] font-bold text-prime transition-colors" id="label-student">Single Student</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="target-toggle" class="sr-only peer" onchange="toggleTarget()">
+                            <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-prime"></div>
+                        </label>
+                        <span class="text-[10px] font-bold text-slate-400 transition-colors" id="label-class">Entire Class</span>
+                    </div>
+                </div>
+
+                <div class="relative" id="student-target-box">
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Student *</label>
+                    <input type="text" id="f-student-search" onkeyup="searchStudentsModal()" class="premium-input bg-white w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="Select student..." required autocomplete="off">
+                    <input type="hidden" id="f-student-id">
+                    <div id="modal-student-results" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl z-[100] max-h-48 overflow-y-auto py-2"></div>
+                </div>
+                
+                <div class="relative hidden" id="class-target-box">
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Class *</label>
+                    <select id="f-class-id" class="premium-input bg-white w-full px-4 py-3 rounded-xl text-sm font-medium">
+                        <option value="">— Select Class —</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block" id="amount-label">Amount (Rs.) *</label>
+                    <input type="number" id="f-amount" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium" required min="1">
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Description</label>
+                    <input type="text" id="f-desc" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="e.g. Monthly Fee - April">
+                </div>
+                <div id="type-select-container">
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Category</label>
+                    <select id="f-type" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium">
+                        <option value="tuition">Tuition Fee</option>
+                        <option value="admission">Admission Fee</option>
+                        <option value="exam">Exam Fee</option>
+                        <option value="pos">Shop/POS</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" id="save-btn" class="flex-1 bg-prime text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all shadow-lg">Record Transaction</button>
+                    <button type="button" onclick="document.getElementById('fee-modal').classList.add('hidden')" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="bulk-modal" class="modal-overlay hidden">
+        <div class="modal-box max-w-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800">Bulk Print Challans</h3>
+                <button onclick="document.getElementById('bulk-modal').classList.add('hidden')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">Select Class</label>
+                    <select id="bulk-class-id" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-bold outline-none">
+                        <option value="">— Select Class —</option>
+                    </select>
+                </div>
+                <button onclick="printBulkChallans()" class="w-full bg-prime text-white py-4 rounded-xl font-black text-sm shadow-xl shadow-prime/20 hover:scale-[1.02] transition-all">
+                    Generate Class Challans
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('fees');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Fees & Payments');
+
+        let allFees = [], allStudents = [], allClasses = [];
+
+        async function load() {
+            try {
+                [allFees, allStudents, allClasses] = await Promise.all([
+                    window.api.getFees(), 
+                    window.api.getStudents(),
+                    window.api.getClasses()
+                ]);
+
+                const fClassSelect = document.getElementById('f-class-id');
+                if (fClassSelect) {
+                    fClassSelect.innerHTML = '<option value="">— Select Class —</option>' + allClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                }
+                
+                window.onclick = (e) => { 
+                    if (!e.target.closest('.relative')) {
+                        document.getElementById('modal-student-results').classList.add('hidden');
+                        const mainResults = document.getElementById('main-student-results');
+                        if (mainResults) mainResults.classList.add('hidden');
+                    }
+                };
+
+                const params = new URLSearchParams(window.location.search);
+                const sid = params.get('student');
+                if (sid) {
+                    const s = allStudents.find(x => String(x.id) === sid);
+                    if (s) selectStudentMain(s.id, s.name);
+                } else {
+                    renderFees();
+                }
+            } catch (err) { console.error('Load error:', err); }
+        }
+
+        let selectedStudentId = null;
+
+        async function searchStudentsMain() {
+            const query = document.getElementById('student-search').value.toLowerCase().trim();
+            const results = document.getElementById('main-student-results');
+            if (!query) { results.classList.add('hidden'); selectedStudentId = null; renderFees(); return; }
+
+            const filtered = allStudents.filter(s => s.name.toLowerCase().includes(query) || s.roll_no.toLowerCase().includes(query) || String(s.id) === query);
+            
+            if (filtered.length) {
+                const htmlRows = await Promise.all(filtered.slice(0, 20).map(async s => {
+                    let picUrl = '';
+                    if (s.picture) picUrl = await window.api.getStudentPictureUrl(s.picture);
+                    
+                    return `
+                    <div onclick="selectStudentMain('${s.id}', '${s.name}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-0 flex items-center justify-between ${s.status === 'inactive' ? 'opacity-50' : ''}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-prime/10 overflow-hidden flex items-center justify-center">
+                                ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover">` : `<span class="text-prime font-black text-[10px]">${s.name.charAt(0)}</span>`}
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-700">${s.name}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Roll: ${s.roll_no}</p>
+                                    <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${s.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}">${s.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-200"></i>
+                    </div>`;
+                }));
+                results.innerHTML = htmlRows.join('');
+                results.classList.remove('hidden');
+            } else {
+                results.innerHTML = '<div class="px-4 py-3 text-xs font-bold text-slate-400 uppercase">No students found</div>';
+                results.classList.remove('hidden');
+            }
+        }
+
+        function selectStudentMain(id, name) {
+            selectedStudentId = id;
+            document.getElementById('student-search').value = name;
+            document.getElementById('main-student-results').classList.add('hidden');
+            renderFees();
+        }
+
+        async function searchStudentsModal() {
+            const query = document.getElementById('f-student-search').value.toLowerCase().trim();
+            const results = document.getElementById('modal-student-results');
+            if (!query) { results.classList.add('hidden'); return; }
+
+            const filtered = allStudents.filter(s => s.name.toLowerCase().includes(query) || s.roll_no.toLowerCase().includes(query) || String(s.id) === query);
+            
+            if (filtered.length) {
+                const htmlRows = await Promise.all(filtered.slice(0, 10).map(async s => {
+                    let picUrl = '';
+                    if (s.picture) picUrl = await window.api.getStudentPictureUrl(s.picture);
+
+                    return `
+                    <div onclick="selectStudentModal('${s.id}', '${s.name}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-0 flex items-center gap-3 ${s.status === 'inactive' ? 'opacity-50' : ''}">
+                        <div class="w-8 h-8 rounded-lg bg-prime/10 overflow-hidden flex items-center justify-center">
+                            ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover">` : `<span class="text-prime font-black text-[10px]">${s.name.charAt(0)}</span>`}
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-700">${s.name}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase">Roll: ${s.roll_no}</p>
+                                <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${s.status === 'active' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}">${s.status}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }));
+                results.innerHTML = htmlRows.join('');
+                results.classList.remove('hidden');
+            } else {
+                results.innerHTML = '<div class="px-4 py-3 text-xs font-bold text-slate-400 uppercase">No students found</div>';
+                results.classList.remove('hidden');
+            }
+        }
+
+        function selectStudentModal(id, name) {
+            document.getElementById('f-student-id').value = id;
+            document.getElementById('f-student-search').value = name;
+            document.getElementById('modal-student-results').classList.add('hidden');
+        }
+
+        function toggleTarget() {
+            const isClass = document.getElementById('target-toggle').checked;
+            if (isClass) {
+                document.getElementById('student-target-box').classList.add('hidden');
+                document.getElementById('class-target-box').classList.remove('hidden');
+                document.getElementById('f-student-search').required = false;
+                document.getElementById('f-class-id').required = true;
+                document.getElementById('label-student').classList.replace('text-prime', 'text-slate-400');
+                document.getElementById('label-class').classList.replace('text-slate-400', 'text-prime');
+            } else {
+                document.getElementById('student-target-box').classList.remove('hidden');
+                document.getElementById('class-target-box').classList.add('hidden');
+                document.getElementById('f-student-search').required = true;
+                document.getElementById('f-class-id').required = false;
+                document.getElementById('label-student').classList.replace('text-slate-400', 'text-prime');
+                document.getElementById('label-class').classList.replace('text-prime', 'text-slate-400');
+            }
+        }
+
+        function formatCurrency(n) { return 'Rs. ' + Number(Math.abs(n)).toLocaleString('en-PK'); }
+        function formatDateTime(d) { if (!d) return '—'; return new Date(d.replace(' ', 'T')).toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }); }
+
+        function openFeeModal(type) {
+            document.getElementById('f-id').value = '';
+            document.getElementById('f-entry-type').value = type;
+            document.getElementById('modal-title').textContent = type === 'charge' ? 'New Charge (Debit)' : 'Add Payment (Credit)';
+            document.getElementById('amount-label').textContent = type === 'charge' ? 'Charge Amount (Rs.) *' : 'Payment Amount (Rs.) *';
+            document.getElementById('save-btn').className = type === 'charge' ? 'flex-1 bg-prime text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all shadow-lg' : 'flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-600 transition-all shadow-lg';
+            
+            if (type === 'charge') {
+                document.getElementById('target-toggle-container').classList.remove('hidden');
+                document.getElementById('target-toggle-container').classList.add('flex');
+            } else {
+                document.getElementById('target-toggle-container').classList.add('hidden');
+                document.getElementById('target-toggle-container').classList.remove('flex');
+            }
+            document.getElementById('target-toggle').checked = false;
+            toggleTarget();
+
+            if (selectedStudentId) {
+                const s = allStudents.find(x => String(x.id) === String(selectedStudentId));
+                if (s) selectStudentModal(s.id, s.name);
+            } else {
+                document.getElementById('f-student-id').value = '';
+                document.getElementById('f-student-search').value = '';
+            }
+
+            document.getElementById('f-amount').value = '';
+            document.getElementById('f-desc').value = '';
+            document.getElementById('f-type').value = 'tuition';
+            document.getElementById('fee-modal').classList.remove('hidden');
+        }
+
+        function renderFees() {
+            const table = document.getElementById('fees-table');
+            const recordsCount = document.getElementById('total-records-count');
+            const studentNameLabel = document.getElementById('ledger-student-name');
+            
+            if (!selectedStudentId) {
+                document.getElementById('total-charges-val').textContent = 'Rs. 0';
+                document.getElementById('total-paid-val').textContent = 'Rs. 0';
+                document.getElementById('net-balance-val').textContent = 'Rs. 0';
+                if (recordsCount) recordsCount.textContent = 0;
+                table.innerHTML = '<tr><td colspan="7" class="text-center py-24 text-slate-300 font-bold">Search and select a student to view their ledger</td></tr>';
+                document.getElementById('print-challan-btn').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('print-challan-btn').classList.remove('hidden');
+            const sid = String(selectedStudentId);
+            const student = allStudents.find(x => String(x.id) === sid);
+            if (student) {
+                document.getElementById('ledger-student-name-h').textContent = student.name;
+                document.getElementById('ledger-student-meta').textContent = `Roll: ${student.roll_no} | Class: ${student.class_name || '—'}`;
+                
+                const picContainer = document.getElementById('ledger-student-pic');
+                picContainer.classList.remove('hidden');
+                if (student.picture) {
+                    window.api.getStudentPictureUrl(student.picture).then(url => {
+                        picContainer.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+                    });
+                } else {
+                    picContainer.innerHTML = `<span class="text-prime font-black text-sm">${student.name.charAt(0)}</span>`;
+                }
+            }
+
+            let filtered = allFees.filter(f => String(f.student_id) === sid);
+            filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            let runningBalance = 0, totalDebit = 0, totalCredit = 0;
+            const rows = filtered.map(f => {
+                const d = Number(f.debit || 0), c = Number(f.credit || 0);
+                totalDebit += d; totalCredit += c;
+                runningBalance += (d - c);
+                return { ...f, d, c, balance: runningBalance };
+            });
+
+            document.getElementById('total-charges-val').textContent = formatCurrency(totalDebit);
+            document.getElementById('total-paid-val').textContent = formatCurrency(totalCredit);
+            const netBalance = totalDebit - totalCredit;
+            document.getElementById('net-balance-val').textContent = formatCurrency(netBalance);
+            if (recordsCount) recordsCount.textContent = rows.length;
+
+            table.innerHTML = [...rows].reverse().map((f, i) => `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50">
+                    <td class="px-6 py-4 text-xs font-bold text-slate-400">${rows.length - i}</td>
+                    <td class="px-6 py-4 text-[11px] text-slate-400 font-bold uppercase tracking-tighter">${formatDateTime(f.created_at)}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-700">${f.description || f.type || '—'}</td>
+                    <td class="px-6 py-4 text-sm font-black text-rose-500">${f.d > 0 ? formatCurrency(f.d) : '—'}</td>
+                    <td class="px-6 py-4 text-sm font-black text-emerald-500">${f.c > 0 ? formatCurrency(f.c) : '—'}</td>
+                    <td class="px-6 py-4 text-sm font-black text-slate-800">${formatCurrency(f.balance)}</td>
+                    <td class="px-6 py-4 flex gap-2">
+                        <button onclick='printReceipt(${JSON.stringify(f)})' class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-400 hover:bg-indigo-100 flex items-center justify-center"><i class="fa-solid fa-print text-xs"></i></button>
+                        <button onclick="deleteFee(${f.id})" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-400 hover:bg-rose-100 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        async function saveFee(e) {
+            e.preventDefault();
+            const isClass = document.getElementById('target-toggle') && document.getElementById('target-toggle').checked;
+            const entryType = document.getElementById('f-entry-type').value;
+            const amount = Number(document.getElementById('f-amount').value);
+            const desc = document.getElementById('f-desc').value;
+            const type = document.getElementById('f-type').value;
+
+            if (isClass) {
+                const cid = document.getElementById('f-class-id').value;
+                if (!cid) return showToast('Please select a class', 'error');
+                
+                const targetStudents = allStudents.filter(s => String(s.class_id) === String(cid) && s.status === 'active');
+                if (!targetStudents.length) return showToast('No active students found in this class', 'error');
+                
+                showToast(`Applying charge to ${targetStudents.length} students...`);
+                
+                const promises = targetStudents.map(s => {
+                    const data = { 
+                        student_id: s.id, 
+                        amount: amount, 
+                        debit: entryType === 'charge' ? amount : 0,
+                        credit: entryType === 'payment' ? amount : 0,
+                        description: desc, 
+                        type: type, 
+                        status: entryType === 'payment' ? 'paid' : 'unpaid'
+                    };
+                    return window.api.collectFee(data);
+                });
+                
+                await Promise.all(promises);
+                document.getElementById('fee-modal').classList.add('hidden'); 
+                showToast('Bulk transaction recorded successfully!', 'success');
+                load();
+            } else {
+                const sid = document.getElementById('f-student-id').value;
+                if (!sid) return showToast('Please select a student', 'error');
+                
+                const data = { 
+                    student_id: sid, 
+                    amount: amount, 
+                    debit: entryType === 'charge' ? amount : 0,
+                    credit: entryType === 'payment' ? amount : 0,
+                    description: desc, 
+                    type: type, 
+                    status: entryType === 'payment' ? 'paid' : 'unpaid'
+                };
+                const result = await window.api.collectFee(data);
+                if (result.success) { document.getElementById('fee-modal').classList.add('hidden'); showToast('Transaction recorded!'); load(); }
+            }
+        }
+
+        async function deleteFee(id) {
+            if (confirm('Delete this record?')) {
+                const r = await window.api.deleteFee(id);
+                if (r.success) { showToast('Deleted!'); load(); }
+            }
+        }
+
+        function generateChallanHTML(student, settings, balance, copyName = '') {
+            const date = new Date();
+            const month = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+            const dueDate = new Date(date.getFullYear(), date.getMonth() + 1, 10).toLocaleDateString('en-PK');
+            const total = balance > 0 ? balance : 0;
+            const currentFee = student.monthly_fee || 0;
+            const concession = student.concession || 0;
+            const netMonthly = currentFee - concession;
+            const arrears = total > netMonthly ? (total - netMonthly) : 0;
+
+            let itemsHTML = `<tr><td style="padding: 10px 0; color: #64748b; border-bottom: 1px solid #f1f5f9;">Tuition Fee</td><td style="text-align: right; padding: 10px 0; color: #1e293b; border-bottom: 1px solid #f1f5f9;">Rs. ${Number(currentFee).toLocaleString()}</td></tr>`;
+            
+            if (concession > 0) {
+                itemsHTML += `<tr><td style="padding: 10px 0; color: #10b981; border-bottom: 1px solid #f1f5f9; font-weight: 700;">Fee Concession (-)</td><td style="text-align: right; padding: 10px 0; color: #10b981; border-bottom: 1px solid #f1f5f9; font-weight: 700;">- Rs. ${Number(concession).toLocaleString()}</td></tr>`;
+            }
+
+            if (arrears > 0) {
+                itemsHTML += `<tr><td style="padding: 10px 0; color: #64748b; border-bottom: 1px solid #f1f5f9;">Arrears</td><td style="text-align: right; padding: 10px 0; color: #1e293b; border-bottom: 1px solid #f1f5f9;">Rs. ${Number(arrears).toLocaleString()}</td></tr>`;
+            }
+
+            return `
+                <div class="challan-card" style="width: 100%; max-width: 800px; margin: 0 auto 30px auto; padding: 30px; border: 2px solid #1e293b; border-radius: 20px; box-sizing: border-box; font-family: 'Outfit', sans-serif; background: white; display: flex; flex-direction: column; gap: 15px; position: relative; page-break-after: always;">
+                    ${copyName ? `<div style="position: absolute; top: 20px; right: 25px; font-size: 10px; font-weight: 900; color: #94a3b8; border: 1.5px solid #e2e8f0; padding: 3px 10px; border-radius: 6px; text-transform: uppercase;">${copyName}</div>` : ''}
+                    <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${settings.school_name || 'SMS CONNECT'}</h2>
+                        <div style="background: #1e293b; color: white; font-size: 12px; font-weight: 900; padding: 5px 0; margin-top: 8px; text-transform: uppercase; letter-spacing: 4px; border-radius: 8px;">FEE CHALLAN - ${month}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; gap: 20px; font-size: 14px;">
+                        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #f1f5f9;">
+                            <div style="text-transform: uppercase; font-size: 9px; color: #94a3b8; font-weight: 900; margin-bottom: 5px;">Student Details</div>
+                            <div style="font-weight: 900; color: #1e293b; font-size: 18px;">${student.name}</div>
+                            <div style="font-size: 13px; color: #64748b; font-weight: 700;">Roll: ${student.roll_no} | Class: ${student.class_name || '—'}</div>
+                        </div>
+                        <div style="flex: 1; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #f1f5f9;">
+                            <div style="text-transform: uppercase; font-size: 9px; color: #94a3b8; font-weight: 900; margin-bottom: 5px;">Challan Info</div>
+                            <div style="font-weight: 900; color: #1e293b; font-size: 18px;">Due Date: ${dueDate}</div>
+                            <div style="font-size: 13px; color: #64748b; font-weight: 700;">Inv: CH-${student.id + 7000}</div>
+                        </div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 16px; font-weight: 700; margin: 10px 0;">
+                        ${itemsHTML}
+                        <tr><td style="padding: 20px 0; font-weight: 900; font-size: 22px; color: #1e293b;">NET PAYABLE</td><td style="text-align: right; padding: 20px 0; font-weight: 900; font-size: 28px; color: #1e293b;">Rs. ${Number(total).toLocaleString()}</td></tr>
+                    </table>
+                    <div style="display: flex; justify-content: space-between; padding: 0 10px; margin-top: 30px; margin-bottom: 10px;">
+                        <div style="border-top: 2px solid #1e293b; width: 180px; text-align: center; font-size: 10px; font-weight: 900; color: #1e293b; padding-top: 8px; text-transform: uppercase;">Parent Signature</div>
+                        <div style="border-top: 2px solid #1e293b; width: 180px; text-align: center; font-size: 10px; font-weight: 900; color: #1e293b; padding-top: 8px; text-transform: uppercase;">School Stamp</div>
+                    </div>
+                </div>`;
+        }
+
+        async function printChallan() {
+            if (!selectedStudentId) return;
+            const [settings, student] = await Promise.all([window.api.getSettings(), window.api.getStudent(selectedStudentId)]);
+            const ledger = await window.api.getStudentLedger(selectedStudentId);
+            const balance = ledger.reduce((a, b) => a + (Number(b.debit || 0) - Number(b.credit || 0)), 0);
+            
+            const challanHTML = generateChallanHTML(student, settings, balance);
+            
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Print</title>
+                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>body { margin: 0; padding: 20px; background: #f8fafc; } @media print { body { background: white; padding: 0; } }</style></head>
+                <body>${challanHTML}<script>setTimeout(()=> { window.print(); window.close(); }, 500);<\/script></body></html>`);
+            win.document.close();
+        }
+
+        async function openBulkModal() {
+            const cls = await window.api.getClasses();
+            const select = document.getElementById('bulk-class-id');
+            select.innerHTML = '<option value="">— Select Class —</option>' + cls.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            document.getElementById('bulk-modal').classList.remove('hidden');
+        }
+
+        async function printBulkChallans() {
+            const classId = document.getElementById('bulk-class-id').value;
+            if (!classId) return showToast('Select a class', 'error');
+            const [settings, allStudents, allFees] = await Promise.all([window.api.getSettings(), window.api.getStudents(), window.api.getFees()]);
+            const targetStudents = allStudents.filter(s => s.class_id == classId && s.status === 'active');
+            
+            let finalHTML = '';
+            for (const student of targetStudents) {
+                const f = allFees.filter(fee => String(fee.student_id) === String(student.id));
+                const b = f.reduce((a, b) => a + (Number(b.debit || 0) - Number(b.credit || 0)), 0);
+                const h1 = generateChallanHTML(student, settings, b);
+                finalHTML += `<div style="page-break-after: always; padding: 10mm;">${h1}</div>`;
+            }
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Bulk Print</title>
+                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>
+                    body { margin: 0; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+                    @media print { body { background: white; padding: 0; } }
+                </style></head>
+                <body>${finalHTML}<script>setTimeout(()=> { window.print(); window.close(); }, 1500);<\/script></body></html>`);
+            win.document.close();
+            document.getElementById('bulk-modal').classList.add('hidden');
+        }
+
+        load();
+    </script>
+</body>
+</html>

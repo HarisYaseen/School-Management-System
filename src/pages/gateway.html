@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Gateway</title>
+    <script>
+        const origWarn = console.warn;
+        console.warn = function() {
+            if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].includes('cdn.tailwindcss.com')) return;
+            origWarn.apply(console, arguments);
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f3f4f6; }
+        .toast { position: fixed; top: 2rem; right: 2rem; z-index: 999; padding: 1rem 1.5rem; border-radius: 1rem; font-weight: 700; font-size: 0.85rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: slideIn 0.3s ease; color: white; }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center overflow-hidden">
+
+<div class="relative w-[750px] h-[520px] bg-white rounded-3xl shadow-2xl overflow-hidden flex">
+    
+    <!-- Forms Container -->
+    <div id="forms-container" class="absolute top-0 left-0 w-[940px] h-full flex transition-transform duration-700 ease-in-out" style="transform: translateX(0px);">
+        <!-- EXISTING LOGIN PANEL -->
+        <div class="w-[470px] h-full p-10 flex flex-col justify-center bg-white">
+            <h2 class="text-2xl font-black text-slate-800">System Gateway</h2>
+            <p class="text-xs text-slate-500 mb-6 mt-1 font-medium">Select initialization method below.</p>
+            
+            <div class="flex bg-slate-50 p-1 rounded-xl mb-8 w-full max-w-[320px] border border-slate-200">
+                <button type="button" class="flex-1 py-2.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors" onclick="togglePanel('fresh')">START FRESH</button>
+                <button type="button" class="flex-1 py-2.5 rounded-lg text-[10px] font-bold bg-white text-slate-800 shadow-sm border border-slate-200">EXISTING LOGIN</button>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4 w-full max-w-[320px]">
+                <div class="relative">
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">School ID</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-id-card absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                        <input type="text" id="login-id" class="w-full bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all pl-11 pr-4 py-3 rounded-xl text-xs font-bold text-center tracking-[0.5em]" placeholder="0 0 0 0" maxlength="4" required>
+                    </div>
+                </div>
+                <div class="relative">
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Security Key</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                        <input type="password" id="login-key" class="w-full bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all pl-11 pr-11 py-3 rounded-xl text-xs font-bold text-center tracking-[0.3em]" placeholder="••••••••" required>
+                        <button type="button" onclick="togglePass('login-key', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+                            <i class="fa-solid fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" id="login-btn" class="w-full bg-[#334155] text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest mt-2 hover:bg-slate-700 transition-colors shadow-lg shadow-slate-700/20">Login Securely</button>
+            </form>
+        </div>
+
+        <!-- START FRESH PANEL -->
+        <div class="w-[470px] h-full p-10 flex flex-col justify-center bg-white">
+            <h2 class="text-2xl font-black text-slate-800">System Gateway</h2>
+            <p class="text-xs text-slate-500 mb-6 mt-1 font-medium">Select initialization method below.</p>
+            
+            <div class="flex bg-slate-50 p-1 rounded-xl mb-6 w-full max-w-[360px] border border-slate-200">
+                <button type="button" class="flex-1 py-2.5 rounded-lg text-[10px] font-bold bg-white text-slate-800 shadow-sm border border-slate-200">START FRESH</button>
+                <button type="button" class="flex-1 py-2.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors" onclick="togglePanel('login')">EXISTING LOGIN</button>
+            </div>
+
+            <form onsubmit="handleRegister(event)" class="space-y-3.5 w-full max-w-[360px]">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">School Name</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-school absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                        <input type="text" id="reg-name" class="w-full bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all pl-10 pr-4 py-2.5 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" placeholder="e.g. Global High School" required>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-end mb-1.5">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">School ID (4-Digit)</label>
+                        <button type="button" onclick="autoGenId()" class="text-[8px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-600 transition-colors">Auto-Generate</button>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-id-badge absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                        <input type="text" id="reg-id" class="w-full bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all pl-10 pr-4 py-2.5 rounded-xl text-xs font-bold text-center tracking-[0.5em] outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" placeholder="0 0 0 0" maxlength="4" required>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Master Key</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                            <input type="password" id="reg-key" oninput="checkMatch()" class="w-full bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all pl-10 pr-9 py-2.5 rounded-xl text-xs font-bold tracking-[0.2em]" placeholder="••••••••" required>
+                            <button type="button" onclick="togglePass('reg-key', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Repeat Key</label>
+                        <div class="relative">
+                            <input type="password" id="reg-repeat" oninput="checkMatch()" class="w-full bg-slate-50 border border-slate-200 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all px-4 py-2.5 rounded-xl text-xs font-bold tracking-[0.2em]" placeholder="••••••••" required>
+                            <button type="button" onclick="togglePass('reg-repeat', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="reg-btn" class="w-full bg-[#334155] text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest mt-1 hover:bg-slate-700 transition-colors shadow-lg shadow-slate-700/20">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dark Overlay -->
+    <div id="overlay" class="absolute top-0 left-[470px] w-[280px] h-full bg-[#374151] z-10 transition-transform duration-700 ease-in-out p-10 flex flex-col justify-center border-l border-slate-600/50" style="transform: translateX(0px);">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                <i class="fa-solid fa-graduation-cap text-white/50 text-base"></i>
+            </div>
+            <span class="text-white font-bold text-base tracking-wide">SMS Connect</span>
+        </div>
+        <h1 class="text-3xl font-black text-white leading-[1.1] mb-4 tracking-tight">Empowering<br><span class="text-yellow-400">Education</span></h1>
+        <p class="text-slate-400 text-[13px] font-medium leading-relaxed max-w-[180px]">The most powerful offline-first management suite.</p>
+        
+        <div class="absolute bottom-10 left-10">
+            <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Architect Engine V2.01</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    window.onload = () => {
+        const savedId = localStorage.getItem('remembered_id');
+        if (savedId) {
+            document.getElementById('login-id').value = savedId;
+        }
+    }
+
+    function togglePanel(target) {
+        const overlay = document.getElementById('overlay');
+        const forms = document.getElementById('forms-container');
+        if(target === 'fresh') {
+            overlay.style.transform = 'translateX(-470px)';
+            forms.style.transform = 'translateX(-190px)';
+            overlay.classList.remove('border-l');
+            overlay.classList.add('border-r');
+        } else {
+            overlay.style.transform = 'translateX(0px)';
+            forms.style.transform = 'translateX(0px)';
+            overlay.classList.remove('border-r');
+            overlay.classList.add('border-l');
+        }
+    }
+
+    function checkMatch() {
+        const k = document.getElementById('reg-key');
+        const r = document.getElementById('reg-repeat');
+        if (!r.value) {
+            r.classList.remove('border-emerald-500', 'border-rose-500');
+            r.classList.add('border-slate-200');
+            return;
+        }
+        if (k.value === r.value) {
+            r.classList.remove('border-rose-500', 'border-slate-200');
+            r.classList.add('border-emerald-500');
+        } else {
+            r.classList.remove('border-emerald-500', 'border-slate-200');
+            r.classList.add('border-rose-500');
+        }
+    }
+
+    function togglePass(id, btn) {
+        const input = document.getElementById(id);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function autoGenId() {
+        const id = Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('reg-id').value = id;
+    }
+
+    function showToast(msg, type = 'success') {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const t = document.createElement('div');
+        t.className = `toast ${type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`;
+        t.innerHTML = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    async function handleRegister(e) {
+        if(e) e.preventDefault();
+        const schoolName = document.getElementById('reg-name').value;
+        const schoolId = document.getElementById('reg-id').value;
+        const masterKey = document.getElementById('reg-key').value;
+        const repeatKey = document.getElementById('reg-repeat').value;
+
+        if (!schoolName || !schoolId || !masterKey) return showToast('Please fill all fields', 'error');
+        if (masterKey !== repeatKey) return showToast('Keys do not match!', 'error');
+        if (schoolId.length !== 4) return showToast('School ID must be 4 digits', 'error');
+
+        const btn = document.getElementById('reg-btn');
+        const oldText = btn.textContent;
+        btn.textContent = 'REGISTERING...';
+        btn.disabled = true;
+        
+        const result = await window.api.register({ schoolName, schoolId, masterKey });
+        
+        if (result.success) {
+            showToast('System initialized successfully!');
+            localStorage.setItem('remembered_id', schoolId);
+            document.getElementById('login-id').value = schoolId;
+            setTimeout(() => {
+                togglePanel('login');
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }, 1000);
+        } else {
+            showToast(result.error || 'Initialization failed', 'error');
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
+    }
+
+    async function handleLogin(e) {
+        if(e) e.preventDefault();
+        const schoolId = document.getElementById('login-id').value;
+        const masterKey = document.getElementById('login-key').value;
+
+        if (!schoolId || !masterKey) return showToast('Please enter ID and Key', 'error');
+
+        const btn = document.getElementById('login-btn');
+        const oldText = btn.textContent;
+        btn.textContent = 'LOGGING IN...';
+        btn.disabled = true;
+
+        const result = await window.api.login({ schoolId, masterKey });
+        
+        if (result.success) {
+            localStorage.setItem('remembered_id', schoolId);
+            sessionStorage.setItem('user', JSON.stringify(result.user));
+            window.location.href = 'dashboard.html';
+        } else {
+            showToast(result.error || 'Invalid ID or Key', 'error');
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

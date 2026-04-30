@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-[1600px] mx-auto space-y-10">
+                <!-- Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" id="stats-grid"></div>
+                <!-- Main Content -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div class="lg:col-span-8 space-y-10">
+                        <!-- Chart -->
+                        <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border-2 border-prime/10">
+                            <div class="flex justify-between items-center mb-10">
+                                <div>
+                                    <h3 class="text-xl font-black text-slate-800">Monthly Revenue Graph</h3>
+                                    <p class="text-xs font-bold text-slate-400 mt-1">Paid Income (<span id="current-year"></span>)</p>
+                                </div>
+                            </div>
+                            <div class="h-80 w-full flex items-end justify-between gap-4 px-2" id="revenue-chart"></div>
+                        </div>
+                        <!-- Widgets -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border-2 border-prime/10">
+                                <div class="flex justify-between items-center mb-8">
+                                    <h3 class="text-xl font-black text-slate-800">Recent Admissions</h3>
+                                    <a href="students.html" class="text-[10px] font-black text-prime uppercase tracking-widest hover:underline">View All</a>
+                                </div>
+                                <div class="space-y-6" id="recent-admissions"></div>
+                            </div>
+                            <div class="bg-prime p-10 rounded-[3rem] shadow-2xl flex flex-col justify-between relative overflow-hidden group">
+                                <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                                <div>
+                                    <p class="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Real-time Outstanding</p>
+                                    <h4 class="text-4xl font-black text-white" id="pending-fees-val">Rs. 0</h4>
+                                </div>
+                                <div class="mt-10">
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-[11px] font-black text-white/60 uppercase">Collection Efficiency</span>
+                                        <span class="text-[11px] font-black text-white" id="efficiency-pct">—</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div class="h-full bg-amber-400 rounded-full transition-all duration-700" id="efficiency-bar" style="width:0%"></div>
+                                    </div>
+                                </div>
+                                <a href="fees.html" class="mt-8 py-4 bg-white/10 hover:bg-white/20 transition-all text-white text-center rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10">Manage Finances</a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Right Column -->
+                    <div class="lg:col-span-4">
+                        <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border-2 border-prime/10">
+                            <h3 class="text-xl font-black text-slate-800 mb-8">Quick Actions</h3>
+                            <div class="space-y-3">
+                                <a href="students.html" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all group">
+                                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                        <i class="fa-solid fa-user-plus"></i>
+                                    </div>
+                                    <div><p class="font-bold text-slate-700">Add Student</p><p class="text-xs text-slate-400">Register a new admission</p></div>
+                                </a>
+                                <a href="fees.html" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all group">
+                                    <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                        <i class="fa-solid fa-money-bill-wave"></i>
+                                    </div>
+                                    <div><p class="font-bold text-slate-700">Collect Fee</p><p class="text-xs text-slate-400">Process a fee payment</p></div>
+                                </a>
+                                <a href="attendance.html" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all group">
+                                    <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                                        <i class="fa-solid fa-calendar-check"></i>
+                                    </div>
+                                    <div><p class="font-bold text-slate-700">Mark Attendance</p><p class="text-xs text-slate-400">Today's attendance</p></div>
+                                </a>
+                                <a href="pos.html" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all group">
+                                    <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                                        <i class="fa-solid fa-cash-register"></i>
+                                    </div>
+                                    <div><p class="font-bold text-slate-700">Point of Sale</p><p class="text-xs text-slate-400">Sell school items</p></div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('dashboard');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Dashboard');
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        const statCards = [
+            { key: 'total_students', label: 'Students', icon: 'fa-graduation-cap', color: 'blue' },
+            { key: 'total_teachers', label: 'Teachers', icon: 'fa-chalkboard-user', color: 'rose' },
+            { key: 'total_parents', label: 'Parents', icon: 'fa-people-roof', color: 'indigo' },
+            { key: 'total_collection', label: 'Earnings', icon: 'fa-wallet', color: 'amber', isCurrency: true },
+        ];
+
+        async function load() {
+            const [stats, revenue, admissions] = await Promise.all([
+                window.api.getDashboardStats(),
+                window.api.getMonthlyRevenue(),
+                window.api.getRecentAdmissions(),
+            ]);
+
+            // Stats
+            document.getElementById('stats-grid').innerHTML = statCards.map(c => `
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-prime/10 group flex items-center gap-6 relative overflow-hidden">
+                    <i class="fa-solid fa-graduation-cap absolute -right-6 -top-6 text-7xl text-slate-400/20 -rotate-12 group-hover:scale-110 group-hover:text-prime/10 transition-transform duration-700"></i>
+                    <div class="w-16 h-16 rounded-2xl bg-${c.color}-50 flex items-center justify-center text-${c.color}-500 group-hover:bg-${c.color}-500 group-hover:text-white transition-all duration-500 relative z-10">
+                        <i class="fa-solid ${c.icon} text-2xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-slate-400 font-bold text-sm uppercase tracking-wider">${c.label}</p>
+                        <p class="text-3xl font-black text-slate-800">${c.isCurrency ? formatCurrency(stats[c.key]) : formatNum(stats[c.key])}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Pending fees
+            document.getElementById('pending-fees-val').textContent = formatCurrency(stats.pending_fees);
+            const total = stats.total_collection + stats.pending_fees;
+            const eff = total > 0 ? Math.round((stats.total_collection / total) * 100) : 0;
+            document.getElementById('efficiency-pct').textContent = eff + '%';
+            document.getElementById('efficiency-bar').style.width = eff + '%';
+
+            // Revenue Chart
+            const maxVal = Math.max(...Object.values(revenue), 1000);
+            const curMonth = new Date().toLocaleString('en', { month: 'short' });
+            document.getElementById('revenue-chart').innerHTML = Object.entries(revenue).map(([m, amt]) => `
+                <div class="flex-1 flex flex-col items-center gap-4 group relative h-full justify-end">
+                    <div class="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] p-2 rounded-lg font-black whitespace-nowrap z-10 pointer-events-none">
+                        ${formatCurrency(amt)}
+                    </div>
+                    <div class="w-full flex items-end justify-center h-full max-h-[256px]">
+                        <div class="w-3 ${m === curMonth ? 'bg-rose-400' : 'bg-prime'} rounded-t-lg transition-all duration-500 group-hover:bg-indigo-500" style="height:${(amt / maxVal) * 100}%"></div>
+                    </div>
+                    <span class="text-[11px] font-bold ${m === curMonth ? 'text-prime font-black' : 'text-slate-300'}">${m}</span>
+                </div>
+            `).join('');
+
+            // Recent Admissions
+            const admEl = document.getElementById('recent-admissions');
+            admEl.innerHTML = admissions.length
+                ? admissions.map(s => `
+                    <div class="flex items-center gap-4 group">
+                        <div class="w-12 h-12 rounded-2xl bg-prime/5 flex items-center justify-center text-prime font-black transition-all group-hover:bg-prime group-hover:text-white">${s.name.charAt(0)}</div>
+                        <div class="flex-1">
+                            <p class="text-sm font-black text-slate-700">${s.name}</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${s.class_name || 'Unassigned'}</p>
+                        </div>
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase">Active</span>
+                    </div>`).join('')
+                : '<p class="text-center text-slate-300 font-bold py-8">No admissions yet.</p>';
+        }
+
+        load();
+    </script>
+</body>
+</html>

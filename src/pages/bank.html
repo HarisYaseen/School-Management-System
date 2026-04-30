@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Bank Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-[1600px] mx-auto space-y-8">
+                
+                    <div>
+                        <h2 class="text-4xl font-black text-slate-800 tracking-tight">Bank Management</h2>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white p-2 rounded-2xl border-2 border-slate-100 shadow-sm">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Report Period:</span>
+                        <select id="period-filter" onchange="load()" class="bg-slate-50 border-none rounded-xl px-6 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-prime transition-all">
+                            <option value="all">All Time</option>
+                            <option value="daily">Today Only</option>
+                            <option value="weekly">This Week</option>
+                            <option value="monthly">This Month</option>
+                            <option value="annually">This Year</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Master Net Balance Card -->
+                <div class="bg-gradient-to-br from-indigo-900 via-slate-900 to-prime p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden group border-4 border-white/10 mb-16">
+                    <i class="fa-solid fa-graduation-cap absolute -right-12 -top-12 text-[15rem] text-white/5 -rotate-12 pointer-events-none transition-transform duration-1000 group-hover:scale-110"></i>
+                    <div class="absolute -right-20 -top-20 w-96 h-96 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-all duration-700"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div>
+                            <p class="text-indigo-300 font-black text-xs uppercase tracking-[0.4em] mb-4">Total Net School Balance</p>
+                            <h1 class="text-7xl font-black text-white tracking-tighter" id="net-total">Rs. 0</h1>
+                        </div>
+                        <div class="w-32 h-32 rounded-[2.5rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white shadow-2xl">
+                            <i class="fa-solid fa-vault text-5xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-16 pb-10">
+                    <!-- Tuition Card -->
+                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-blue-500/5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
+                        <div class="w-24 h-24 rounded-[2rem] bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner">
+                            <i class="fa-solid fa-graduation-cap text-4xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">Tuition Collection</p>
+                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="tuition-total">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    <!-- Admission Card -->
+                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-indigo-500/5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
+                        <div class="w-24 h-24 rounded-[2rem] bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-inner">
+                            <i class="fa-solid fa-user-plus text-4xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">Admission Fee</p>
+                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="admission-total">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    <!-- POS Sales Card -->
+                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-emerald-500/5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
+                        <div class="w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner relative z-10">
+                            <i class="fa-solid fa-cart-shopping text-4xl"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">POS Total Sale</p>
+                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="pos-total">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Purchase Card -->
+                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-rose-500/5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
+                        <div class="w-24 h-24 rounded-[2rem] bg-rose-50 flex items-center justify-center text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-inner">
+                            <i class="fa-solid fa-file-invoice-dollar text-4xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">Total Inventory Purchase</p>
+                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="purchase-total">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Expenses Card -->
+                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-amber-500/5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
+                        <div class="w-24 h-24 rounded-[2rem] bg-amber-50 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all shadow-inner">
+                            <i class="fa-solid fa-receipt text-4xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">Total Expenses</p>
+                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="expenses-total">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    <!-- POS Net Profit Card -->
+                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-emerald-500/5 relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
+                        <div class="w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner relative z-10">
+                            <i class="fa-solid fa-chart-line text-4xl"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">POS Net Profit</p>
+                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="profit-total">Rs. 0</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('bank');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Financial Overview');
+
+        async function load() {
+            try {
+                const period = document.getElementById('period-filter').value;
+                const stats = await window.api.getBankStats(period);
+                
+                document.getElementById('tuition-total').textContent = formatCurrency(stats.tuition);
+                document.getElementById('admission-total').textContent = formatCurrency(stats.admission);
+                document.getElementById('pos-total').textContent = formatCurrency(stats.posSales);
+                document.getElementById('purchase-total').textContent = formatCurrency(stats.totalPurchases);
+                document.getElementById('expenses-total').textContent = formatCurrency(stats.expenses);
+                document.getElementById('profit-total').textContent = formatCurrency(stats.posProfit);
+                document.getElementById('net-total').textContent = formatCurrency(stats.netBalance);
+            } catch (err) {
+                console.error("Failed to load bank stats:", err);
+            }
+        }
+
+        load();
+        // Refresh data every 30 seconds to keep it live
+        setInterval(load, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "sms-connect",
+  "version": "1.0.8",
+  "description": "School Management System - Electron Edition",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.sms.connect",
+    "productName": "SMS Connect",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "artifactName": "SMS-Connect-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "tailwindcss": "^4.2.4"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.1"
+  }
+}

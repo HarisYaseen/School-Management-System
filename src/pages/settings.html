@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-5xl mx-auto space-y-8">
+                <!-- School Info -->
+                <div class="bg-white p-10 rounded-[2rem] shadow-sm border-2 border-prime/10 relative overflow-hidden">
+                    <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-9xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <h3 class="text-xl font-black text-slate-800 mb-2">School Information</h3>
+                    <p class="text-sm text-slate-400 mb-8">Basic details about your school displayed throughout the app.</p>
+                    <form onsubmit="saveSettings(event)" class="space-y-6">
+                        <div>
+                            <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">School Name</label>
+                            <input type="text" id="school-name" class="premium-input bg-slate-50 w-full px-4 py-3.5 rounded-xl text-sm font-medium">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">Contact Number</label>
+                                <input type="text" id="school-contact" class="premium-input bg-slate-50 w-full px-4 py-3.5 rounded-xl text-sm font-medium">
+                            </div>
+                            <div>
+                                <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">Email</label>
+                                <input type="text" id="school-email" class="premium-input bg-slate-50 w-full px-4 py-3.5 rounded-xl text-sm font-medium">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">Address</label>
+                            <input type="text" id="school-address" class="premium-input bg-slate-50 w-full px-4 py-3.5 rounded-xl text-sm font-medium">
+                        </div>
+                        <button type="submit" class="bg-prime text-white px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all shadow-lg shadow-prime/20">Save Settings</button>
+                    </form>
+                </div>
+
+                <!-- Class & Subject Management -->
+                <div class="bg-white p-10 rounded-[2rem] shadow-sm border-2 border-prime/10 relative overflow-hidden">
+                    <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-9xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800">Class & Subjects</h3>
+                            <p class="text-sm text-slate-400 mt-1">Manage standard subjects for each class.</p>
+                        </div>
+                        <form onsubmit="addClass(event)" class="flex gap-2">
+                            <input type="text" id="new-class" placeholder="Add Class..." class="premium-input bg-slate-50 px-4 py-2.5 rounded-xl text-sm font-medium w-32" required>
+                            <button type="submit" class="bg-prime text-white px-4 py-2.5 rounded-xl font-bold text-sm">Add Class</button>
+                        </form>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="classes-grid"></div>
+                    </div>
+                </div>
+
+                <!-- System Backup -->
+                <div class="bg-indigo-50 p-10 rounded-[2rem] border border-indigo-100">
+                    <h3 class="text-xl font-black text-indigo-800 mb-2">System Backup</h3>
+                    <p class="text-sm text-indigo-600 mb-8 font-medium">Create an instant backup of your complete database. Files will be saved securely to your D:\SMS_Connect_Backups folder.</p>
+                    <button onclick="handleBackup()" class="bg-indigo-500 text-white px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
+                        <i class="fa-solid fa-hard-drive mr-2"></i> Create Backup
+                    </button>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="bg-rose-50 p-10 rounded-[2rem] border border-rose-100">
+                    <h3 class="text-xl font-black text-rose-800 mb-2">Danger Zone</h3>
+                    <p class="text-sm text-rose-600 mb-8 font-medium">Resetting the database will permanently delete all students, teachers, inventory, sales, and fee records. This action cannot be undone.</p>
+                    <button onclick="handleReset()" class="bg-rose-500 text-white px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/20">
+                        <i class="fa-solid fa-trash-can mr-2"></i> Reset Database
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Modal for Managing Class & Subjects -->
+    <div id="edit-class-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <h3 class="text-xl font-black text-slate-800">Manage Class</h3>
+                <button onclick="document.getElementById('edit-class-modal').classList.add('hidden'); load();" class="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 pr-2 sidebar-scroll">
+                <div class="mb-8">
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">Class Name</label>
+                    <div class="flex gap-2">
+                        <input type="hidden" id="edit-class-id">
+                        <input type="text" id="edit-class-input" class="premium-input bg-slate-50 flex-1 px-4 py-3 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                        <button onclick="saveEditedClass()" class="px-5 py-3 rounded-xl text-sm font-bold bg-indigo-500 text-white hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/30 whitespace-nowrap">Save Name</button>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-100">
+                    <h4 class="text-sm font-black text-slate-800 mb-4">Class Subjects</h4>
+                    <form onsubmit="addSubjectToClass(event)" class="flex gap-2 mb-6">
+                        <input type="text" id="modal-s-name" placeholder="Subject Name" class="premium-input bg-slate-50 flex-1 px-4 py-2.5 rounded-xl text-sm font-medium" required>
+                        <input type="number" id="modal-s-marks" value="100" class="premium-input bg-slate-50 w-24 px-4 py-2.5 rounded-xl text-sm font-medium" required>
+                        <button type="submit" class="bg-prime text-white px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap">Add Subject</button>
+                    </form>
+                    
+                    <div class="space-y-3 max-h-64 overflow-y-auto pr-2 sidebar-scroll" id="modal-subjects-list">
+                        <!-- Subjects injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('settings');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Settings');
+
+        let classes = [], allSubjects = [];
+
+        async function load() {
+            const [settings, cls, sub] = await Promise.all([
+                window.api.getSettings(), 
+                window.api.getClasses(),
+                window.api.getSubjects()
+            ]);
+            classes = cls;
+            allSubjects = sub;
+
+            document.getElementById('school-name').value = settings.school_name || '';
+            document.getElementById('school-contact').value = settings.school_contact || '';
+            document.getElementById('school-email').value = settings.school_email || '';
+            document.getElementById('school-address').value = settings.school_address || '';
+            
+            renderClasses();
+        }
+
+        function renderClasses() {
+            const grid = document.getElementById('classes-grid');
+            grid.innerHTML = classes.length ? classes.map(c => `
+                <div class="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl group border border-slate-100 hover:border-indigo-100 transition-all">
+                    <span class="text-sm font-bold text-slate-700">${c.name}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black text-slate-300 group-hover:hidden uppercase">Class</span>
+                        <div class="hidden group-hover:flex items-center gap-1">
+                            <button onclick="editClass(${c.id}, '${c.name.replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-400 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all" title="Manage Class">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                            <button onclick="deleteClass(${c.id})" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all" title="Remove Class">
+                                <i class="fa-solid fa-trash text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`).join('')
+                : '<div class="col-span-3 text-center py-6 text-slate-300 text-sm font-bold">No classes yet.</div>';
+        }
+
+        function renderModalSubjects(classId) {
+            const list = document.getElementById('modal-subjects-list');
+            const filtered = allSubjects.filter(s => s.class_id == classId);
+            list.innerHTML = filtered.length ? filtered.map(s => `
+                <div class="flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-slate-100 group hover:border-indigo-100 transition-all shadow-sm">
+                    <div>
+                        <div class="text-sm font-bold text-slate-700">${s.name}</div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Marks: ${s.total_marks}</div>
+                    </div>
+                    <button onclick="deleteSubjectFromModal(${s.id}, ${classId})" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white flex items-center justify-center">
+                        <i class="fa-solid fa-trash text-[10px]"></i>
+                    </button>
+                </div>`).join('')
+                : '<div class="text-center py-6 bg-slate-50 rounded-xl text-slate-400 font-bold text-xs uppercase tracking-widest">No subjects defined.</div>';
+        }
+
+        async function addSubjectToClass(e) {
+            e.preventDefault();
+            const classId = document.getElementById('edit-class-id').value;
+            const name = document.getElementById('modal-s-name').value.trim();
+            const marks = document.getElementById('modal-s-marks').value;
+            
+            const res = await window.api.saveSubject({ name, total_marks: marks, class_id: classId });
+            if (res.success) {
+                document.getElementById('modal-s-name').value = '';
+                showToast('Subject added!');
+                allSubjects = await window.api.getSubjects();
+                renderModalSubjects(classId);
+            }
+        }
+
+        async function deleteSubjectFromModal(id, classId) {
+            if (confirm('Delete this subject?')) {
+                await window.api.deleteSubject(id);
+                showToast('Subject deleted');
+                allSubjects = await window.api.getSubjects();
+                renderModalSubjects(classId);
+            }
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            const data = {
+                school_name: document.getElementById('school-name').value,
+                school_contact: document.getElementById('school-contact').value,
+                school_email: document.getElementById('school-email').value,
+                school_address: document.getElementById('school-address').value,
+            };
+            const result = await window.api.saveSettings(data);
+            if (result.success) showToast('Settings saved!');
+        }
+
+        async function addClass(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-class').value.trim();
+            if (!name) return;
+            const result = await window.api.createClass({ name });
+            if (result.success) { document.getElementById('new-class').value = ''; showToast('Class added!'); load(); }
+        }
+
+        async function editClass(id, oldName) {
+            document.getElementById('edit-class-id').value = id;
+            document.getElementById('edit-class-input').value = oldName;
+            document.getElementById('edit-class-modal').classList.remove('hidden');
+            renderModalSubjects(id);
+        }
+
+        async function saveEditedClass() {
+            const id = document.getElementById('edit-class-id').value;
+            const oldName = document.getElementById('edit-class-input').defaultValue;
+            const newName = document.getElementById('edit-class-input').value.trim();
+            
+            if (newName && newName !== oldName) {
+                const res = await window.api.updateClass({ id, name: newName });
+                if (res.success) {
+                    showToast('Class name saved!');
+                    document.getElementById('edit-class-input').defaultValue = newName; // Update default
+                } else {
+                    showToast(res.error || 'Failed to update class', 'error');
+                }
+            }
+        }
+
+        async function deleteClass(id) {
+            if (confirm('Are you sure you want to delete this class? This will also remove any subjects associated with it.')) {
+                const res = await window.api.deleteClass(id);
+                if (res.success) {
+                    showToast('Class removed!');
+                    load();
+                } else {
+                    showToast(res.error || 'Failed to delete class', 'error');
+                }
+            }
+        }
+
+        async function handleReset() {
+            if (!confirm("Are you sure? This is IRREVERSIBLE.")) return;
+            const result = await window.api.resetDatabase();
+            if (result.success) { showToast('Database reset!'); setTimeout(() => window.location.reload(), 1500); }
+        }
+
+        async function handleBackup() {
+            if (confirm('Create a backup on your D:\\ drive?')) {
+                showToast('Creating backup...', 'info');
+                const result = await window.api.createBackup();
+                if (result.success) {
+                    showToast('Backup successful! Saved at: ' + result.path, 'success');
+                } else {
+                    showToast('Backup failed: ' + result.error, 'error');
+                }
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

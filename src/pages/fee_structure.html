@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Structure Report - SMS Connect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+    <style>
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+        .sidebar-scroll::-webkit-scrollbar { width: 0; background: transparent; }
+        .premium-card { background: white; border-radius: 24px; border: 1px solid #f1f5f9; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.03); }
+        .premium-input { border: 1px solid #e2e8f0; transition: all 0.2s; }
+        .premium-input:focus { border-color: #1e293b; box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.05); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <div id="topbar-container"></div>
+
+        <div class="flex-1 overflow-y-auto p-10">
+            <div class="flex justify-between items-center mb-10">
+                <div>
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Fee Structure Report</h1>
+                    <p class="text-slate-400 font-bold mt-1 uppercase text-[10px] tracking-widest">Complete Student Fee & Concession Audit</p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="window.print()" class="bg-white text-slate-600 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 border border-slate-100 hover:bg-slate-50 transition-all no-print">
+                        <i class="fa-solid fa-print"></i> Print Report
+                    </button>
+                </div>
+            </div>
+
+            <div class="premium-card p-8 mb-10 no-print">
+                <div class="flex flex-wrap gap-6 items-end">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Filter by Class</label>
+                        <select id="class-filter" onchange="renderReport()" class="premium-input bg-slate-50 w-full px-5 py-3.5 rounded-2xl text-sm font-bold">
+                            <option value="">All Classes</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6 flex-[2]">
+                        <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+                            <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Total Students</p>
+                            <h3 id="stat-total" class="text-xl font-black text-indigo-700">0</h3>
+                        </div>
+                        <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                            <p class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Total Concessions</p>
+                            <h3 id="stat-concession" class="text-xl font-black text-emerald-700">Rs. 0</h3>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Net Monthly Revenue</p>
+                            <h3 id="stat-revenue" class="text-xl font-black text-slate-800">Rs. 0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="premium-card overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/50 border-b border-slate-100">
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">#</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Info</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Class</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Standard Fee</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Concession</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-emerald-600 uppercase tracking-widest text-right">Net Payable</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('fee-structure');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Finance Audit');
+
+        let allStudents = [];
+        let classes = [];
+
+        async function init() {
+            allStudents = await window.api.getStudents();
+            classes = await window.api.getClasses();
+            
+            const filter = document.getElementById('class-filter');
+            classes.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                filter.appendChild(opt);
+            });
+
+            renderReport();
+        }
+
+        async function renderReport() {
+            const classId = document.getElementById('class-filter').value;
+            const tbody = document.getElementById('report-table-body');
+            
+            let filtered = allStudents.filter(s => s.status === 'active');
+            if (classId) filtered = filtered.filter(s => s.class_id == classId);
+
+            let totalConcession = 0;
+            let totalRevenue = 0;
+
+            const renderedRows = await Promise.all(filtered.map(async (s, i) => {
+                const fee = Number(s.monthly_fee) || 0;
+                const conc = Number(s.concession) || 0;
+                const net = Math.max(0, fee - conc);
+                
+                totalConcession += conc;
+                totalRevenue += net;
+
+                let avatar = `<div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 text-sm shrink-0">${s.name.charAt(0)}</div>`;
+                if (s.picture) {
+                    const url = await window.api.getStudentPictureUrl(s.picture);
+                    if (url) {
+                        avatar = `<img src="${url}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0">`;
+                    }
+                }
+
+                return `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                        <td class="px-8 py-5 text-xs font-bold text-slate-400">${i + 1}</td>
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-4">
+                                ${avatar}
+                                <div>
+                                    <p class="text-sm font-black text-slate-700 leading-tight">${s.name}</p>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Roll: ${s.roll_no}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5 text-center">
+                            <span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase">${s.class_name || '—'}</span>
+                        </td>
+                        <td class="px-8 py-5 text-right font-bold text-slate-600 text-sm">Rs. ${fee.toLocaleString()}</td>
+                        <td class="px-8 py-5 text-right font-bold text-rose-500 text-sm">
+                            ${conc > 0 ? `- Rs. ${conc.toLocaleString()}` : '—'}
+                        </td>
+                        <td class="px-8 py-5 text-right font-black text-emerald-600 text-base italic">Rs. ${net.toLocaleString()}</td>
+                    </tr>
+                `;
+            }));
+            
+            tbody.innerHTML = renderedRows.join('');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-20 text-center text-slate-300 font-bold italic text-sm">No active students found for this filter.</td></tr>`;
+            }
+
+            document.getElementById('stat-total').textContent = filtered.length;
+            document.getElementById('stat-concession').textContent = 'Rs. ' + totalConcession.toLocaleString();
+            document.getElementById('stat-revenue').textContent = 'Rs. ' + totalRevenue.toLocaleString();
+        }
+
+        init();
+    </script>
+</body>
+</html>

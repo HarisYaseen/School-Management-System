@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-5xl mx-auto space-y-8">
+
+                <!-- Mark Attendance Card -->
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border-2 border-prime/10 relative overflow-hidden">
+                    <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-9xl text-prime/5 -rotate-12 pointer-events-none"></i>
+
+                    <!-- Header -->
+                    <div class="flex flex-wrap justify-between items-center mb-6 gap-4 relative z-10">
+                        <h3 class="text-xl font-black text-slate-800">Mark Attendance</h3>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Class Filter -->
+                            <select id="att-class" onchange="onClassChange()" class="premium-input bg-slate-50 px-4 py-3 rounded-xl text-sm font-bold outline-none min-w-[160px]">
+                                <option value="">— Select Class —</option>
+                            </select>
+                            <!-- Date -->
+                            <input type="date" id="att-date" class="premium-input bg-slate-50 px-4 py-3 rounded-xl text-sm font-medium" onchange="loadAttendance()">
+                            <!-- Monthly Report Button -->
+                            <button onclick="openMonthlyReport()" class="bg-indigo-500 text-white px-4 py-3 rounded-xl text-sm font-bold hover:bg-indigo-600 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-days"></i> Monthly
+                            </button>
+                            <!-- Counts -->
+                            <div class="flex gap-2 text-xs font-bold">
+                                <span class="flex items-center gap-1.5 bg-emerald-50 px-3 py-2 rounded-xl text-emerald-600">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>Present: <span id="present-count">0</span>
+                                </span>
+                                <span class="flex items-center gap-1.5 bg-rose-50 px-3 py-2 rounded-xl text-rose-600">
+                                    <span class="w-2 h-2 rounded-full bg-rose-400"></span>Absent: <span id="absent-count">0</span>
+                                </span>
+                                <span class="flex items-center gap-1.5 bg-amber-50 px-3 py-2 rounded-xl text-amber-600">
+                                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>Late: <span id="late-count">0</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student List -->
+                    <div id="attendance-list" class="space-y-3">
+                        <div class="text-center py-16 text-slate-300 font-bold flex flex-col items-center gap-3">
+                            <i class="fa-solid fa-chalkboard text-5xl"></i>
+                            <p>Select a class above to begin marking attendance.</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div id="action-btns" class="mt-8 flex gap-3 hidden">
+                        <button id="save-btn" onclick="saveAttendance()" class="flex-1 bg-prime text-white py-4 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-lg shadow-prime/20">
+                            <i class="fa-solid fa-save mr-2"></i>Save Attendance
+                        </button>
+                        <button id="edit-btn" onclick="enableEditing()" class="hidden bg-amber-500 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">
+                            <i class="fa-solid fa-pen mr-2"></i>Edit
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Attendance History Card -->
+                <div id="history-card" class="bg-white rounded-[2rem] shadow-sm border-2 border-prime/10 overflow-hidden relative hidden">
+                    <i class="fa-solid fa-graduation-cap absolute -right-12 -top-12 text-[12rem] text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <div class="p-8 border-b border-slate-50 flex justify-between items-center relative z-10">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800">Attendance History</h3>
+                            <p class="text-xs font-bold text-slate-400 mt-1">Last 30 saved records for selected class</p>
+                        </div>
+                        <span id="history-class-label" class="text-xs font-black text-prime bg-prime/10 px-4 py-2 rounded-xl uppercase tracking-widest"></span>
+                    </div>
+                    <div class="overflow-x-auto relative z-10">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-50/50">
+                                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total</th>
+                                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Present</th>
+                                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Absent</th>
+                                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Late</th>
+                                    <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Monthly Report Modal -->
+    <div id="monthly-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center hidden p-6">
+        <div class="bg-white w-full max-w-7xl h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="p-8 border-b flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Monthly Attendance Report</h2>
+                    <p class="text-sm font-bold text-slate-400" id="report-title-desc">Class: Nursery &bull; April 2026</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="month" id="report-month" class="premium-input bg-white px-4 py-3 rounded-xl text-sm font-bold border-2 border-slate-100" onchange="renderMonthlyReport()">
+                    <button onclick="printMonthlyReport()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> Print
+                    </button>
+                    <button onclick="closeMonthlyReport()" class="w-12 h-12 rounded-full bg-slate-200 text-slate-600 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-auto p-8">
+                <div class="min-w-max border-2 border-slate-100 rounded-[1.5rem] overflow-hidden bg-white">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead id="monthly-head" class="bg-slate-50 sticky top-0 z-20"></thead>
+                        <tbody id="monthly-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-6 border-t bg-slate-50/30 flex justify-end gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> Present</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500"></span> Absent</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500"></span> Late</div>
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-100 border"></span> No Record</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('attendance');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Attendance');
+
+        let students = [], attendanceMap = {}, isSaved = false;
+
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('att-date').value = today;
+        document.getElementById('report-month').value = today.substring(0, 7);
+
+        async function openMonthlyReport() {
+            const classId = document.getElementById('att-class').value;
+            if (!classId) {
+                showToast('Please select a class first.', 'error');
+                return;
+            }
+            document.getElementById('monthly-modal').classList.remove('hidden');
+            renderMonthlyReport();
+        }
+
+        function closeMonthlyReport() {
+            document.getElementById('monthly-modal').classList.add('hidden');
+        }
+
+        async function printMonthlyReport() {
+            const header = await window.getPrintHeader();
+            const head = document.getElementById('monthly-head').innerHTML;
+            const body = document.getElementById('monthly-body').innerHTML;
+            const title = document.getElementById('report-title-desc').textContent;
+
+            const printWin = window.open('', '_blank');
+            printWin.document.write(`
+                <html>
+                <head>
+                    <title>Attendance Report - ${title}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Outfit', sans-serif; padding: 20px; color: #1e293b; }
+                        table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 20px; }
+                        th, td { border: 1px solid #e2e8f0; padding: 6px; text-align: center; }
+                        th { background: #f8fafc; font-weight: 900; }
+                        .student-name { text-align: left; font-weight: 700; min-width: 150px; }
+                        .present { color: #10b981; font-weight: 900; }
+                        .absent { color: #ef4444; font-weight: 900; }
+                        .late { color: #f59e0b; font-weight: 900; }
+                        @media print { @page { size: landscape; } .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    ${header}
+                    <h2 style="text-align:center;text-transform:uppercase;margin:0;">Monthly Attendance Report</h2>
+                    <p style="text-align:center;font-weight:700;color:#64748b;margin:5px 0;">${title}</p>
+                    <table>
+                        <thead>${head}</thead>
+                        <tbody>${body}</tbody>
+                    </table>
+                    <script>
+                        // Clean up classes for print
+                        document.querySelectorAll('.bg-emerald-500').forEach(el => el.classList.add('present'));
+                        document.querySelectorAll('.bg-rose-500').forEach(el => el.classList.add('absent'));
+                        document.querySelectorAll('.bg-amber-500').forEach(el => el.classList.add('late'));
+                        setTimeout(() => { window.print(); window.close(); }, 500);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+        }
+
+        async function renderMonthlyReport() {
+            const classId = document.getElementById('att-class').value;
+            const month = document.getElementById('report-month').value; // YYYY-MM
+            
+            const sel = document.getElementById('att-class');
+            const className = sel.options[sel.selectedIndex].text;
+            const monthName = new Date(month + '-01').toLocaleDateString('default', { month: 'long', year: 'numeric' });
+            document.getElementById('report-title-desc').innerHTML = `Class: ${className} &bull; ${monthName}`;
+
+            const data = await window.api.getMonthlyAttendance({ classId, month });
+            const [year, mon] = month.split('-').map(Number);
+            const daysInMonth = new Date(year, mon, 0).getDate();
+
+            // Group data by student
+            const studentMap = {};
+            data.forEach(d => {
+                if (!studentMap[d.student_id]) {
+                    studentMap[d.student_id] = { name: d.student_name, roll: d.roll_no, records: {} };
+                }
+                if (d.attendance_date) {
+                    const day = parseInt(d.attendance_date.split('-')[2]);
+                    studentMap[d.student_id].records[day] = d.status;
+                }
+            });
+
+            // Header
+            let headHTML = `<tr><th class="p-4 border-b border-r bg-slate-100 font-black text-slate-500 uppercase tracking-tighter sticky left-0 z-30 min-w-[200px]">Student Name</th>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                headHTML += `<th class="p-2 border-b text-center font-black text-slate-500 w-8">${d}</th>`;
+            }
+            headHTML += `</tr>`;
+            document.getElementById('monthly-head').innerHTML = headHTML;
+
+            // Body
+            let bodyHTML = '';
+            Object.values(studentMap).forEach(s => {
+                bodyHTML += `<tr>
+                    <td class="p-4 border-r font-bold text-slate-700 bg-white sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                        <div class="flex flex-col">
+                            <span>${s.name}</span>
+                            <span class="text-[9px] text-slate-400 font-medium">Roll #${s.roll}</span>
+                        </div>
+                    </td>`;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const status = s.records[d]; // P, A, L or undefined
+                    let cls = 'bg-slate-50/50';
+                    let content = '';
+                    if (status === 'P' || status === 'present') { cls = 'bg-emerald-500 text-white'; content = 'P'; }
+                    else if (status === 'A' || status === 'absent') { cls = 'bg-rose-500 text-white'; content = 'A'; }
+                    else if (status === 'L' || status === 'late') { cls = 'bg-amber-500 text-white'; content = 'L'; }
+                    
+                    bodyHTML += `<td class="p-1 border-r text-center">
+                        <div class="w-6 h-6 mx-auto rounded flex items-center justify-center font-black text-[9px] ${cls}">${content}</div>
+                    </td>`;
+                }
+                bodyHTML += `</tr>`;
+            });
+            document.getElementById('monthly-body').innerHTML = bodyHTML || `<tr><td colspan="${daysInMonth+1}" class="p-20 text-center text-slate-300 font-bold">No records found for this month.</td></tr>`;
+        }
+
+        async function initClasses() {
+            const classes = await window.api.getClasses();
+            const sel = document.getElementById('att-class');
+            classes.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function onClassChange() {
+            await loadAttendance();
+            await loadHistory();
+        }
+
+        async function loadAttendance() {
+            const date = document.getElementById('att-date').value;
+            const classId = document.getElementById('att-class').value;
+
+            if (!classId) {
+                students = [];
+                attendanceMap = {};
+                isSaved = false;
+                document.getElementById('attendance-list').innerHTML = `
+                    <div class="text-center py-16 text-slate-300 font-bold flex flex-col items-center gap-3">
+                        <i class="fa-solid fa-chalkboard text-5xl"></i>
+                        <p>Select a class above to begin marking attendance.</p>
+                    </div>`;
+                document.getElementById('present-count').textContent = 0;
+                document.getElementById('absent-count').textContent = 0;
+                document.getElementById('late-count').textContent = 0;
+                document.getElementById('action-btns').classList.add('hidden');
+                document.getElementById('history-card').classList.add('hidden');
+                return;
+            }
+
+            const allStudents = await window.api.getStudents();
+            students = allStudents.filter(s => s.class_id == classId);
+
+            const existing = await window.api.getAttendance(date);
+            attendanceMap = {};
+            existing.forEach(a => attendanceMap[a.student_id] = a.status);
+
+            const alreadySaved = students.length > 0 && existing.some(a => students.find(s => s.id === a.student_id));
+            isSaved = alreadySaved;
+
+            document.getElementById('action-btns').classList.remove('hidden');
+            renderList();
+        }
+
+        async function loadHistory() {
+            const classId = document.getElementById('att-class').value;
+            if (!classId) return;
+
+            const sel = document.getElementById('att-class');
+            const className = sel.options[sel.selectedIndex].text;
+            document.getElementById('history-class-label').textContent = className;
+            document.getElementById('history-card').classList.remove('hidden');
+
+            const history = await window.api.getAttendanceHistory(classId);
+            const body = document.getElementById('history-body');
+
+            if (!history.length) {
+                body.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-300 font-bold">No attendance records yet for this class.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = history.map(h => {
+                const pct = h.total > 0 ? Math.round((h.present / h.total) * 100) : 0;
+                const barColor = pct >= 80 ? 'bg-emerald-400' : pct >= 60 ? 'bg-amber-400' : 'bg-rose-400';
+                const dateObj = new Date(h.date);
+                const dateStr = dateObj.toLocaleDateString('en-PK', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+                return `
+                <tr class="hover:bg-slate-50/50 transition-colors cursor-pointer" onclick="jumpToDate('${h.date}')">
+                    <td class="p-5">
+                        <p class="text-sm font-black text-slate-700">${dateStr}</p>
+                        <div class="mt-1.5 w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="${barColor} h-full rounded-full" style="width:${pct}%"></div>
+                        </div>
+                    </td>
+                    <td class="p-5 text-center"><span class="text-sm font-black text-slate-600">${h.total}</span></td>
+                    <td class="p-5 text-center"><span class="text-sm font-black text-emerald-600">${h.present}</span></td>
+                    <td class="p-5 text-center"><span class="text-sm font-black text-rose-600">${h.absent}</span></td>
+                    <td class="p-5 text-center"><span class="text-sm font-black text-amber-600">${h.late}</span></td>
+                    <td class="p-5 text-center">
+                        <button onclick="event.stopPropagation(); jumpToDate('${h.date}')" class="text-[10px] font-black text-prime bg-prime/10 hover:bg-prime/20 px-3 py-1.5 rounded-lg transition-all uppercase tracking-widest">
+                            View
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function jumpToDate(date) {
+            const dateInput = document.getElementById('att-date');
+            dateInput.value = date;
+            loadAttendance();
+            // Scroll the main content area to top
+            const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+            if (scrollContainer) {
+                scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            showToast('Loading attendance for ' + date);
+        }
+
+        function renderList() {
+            const list = document.getElementById('attendance-list');
+
+            if (students.length === 0) {
+                list.innerHTML = `<div class="text-center py-16 text-slate-300 font-bold flex flex-col items-center gap-3">
+                    <i class="fa-solid fa-users text-5xl"></i>
+                    <p>No students in this class. Add students first.</p>
+                </div>`;
+                updateCounts();
+                return;
+            }
+
+            list.innerHTML = students.map(s => {
+                const status = attendanceMap[s.id] || 'present';
+                const disabled = isSaved ? 'disabled' : '';
+                return `
+                <div class="flex items-center justify-between p-4 rounded-2xl border border-slate-100 transition-all ${isSaved ? 'bg-slate-50/60' : 'hover:border-slate-200'}" id="att-row-${s.id}">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-prime/10 flex items-center justify-center text-prime font-black">${s.name.charAt(0)}</div>
+                        <div>
+                            <p class="font-bold text-slate-700">${s.name}</p>
+                            <p class="text-xs text-slate-400">Roll #${s.roll_no} &bull; ${s.class_name || 'Unassigned'}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 ${isSaved ? 'opacity-70' : ''}">
+                        <button ${disabled} onclick="setStatus(${s.id}, 'present')" class="att-btn px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${status === 'present' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600'}" data-student="${s.id}" data-status="present">Present</button>
+                        <button ${disabled} onclick="setStatus(${s.id}, 'absent')" class="att-btn px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${status === 'absent' ? 'bg-rose-500 text-white shadow-md shadow-rose-200' : 'bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-600'}" data-student="${s.id}" data-status="absent">Absent</button>
+                        <button ${disabled} onclick="setStatus(${s.id}, 'late')" class="att-btn px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${status === 'late' ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-slate-100 text-slate-400 hover:bg-amber-50 hover:text-amber-600'}" data-student="${s.id}" data-status="late">Late</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('save-btn').classList.toggle('hidden', isSaved);
+            document.getElementById('edit-btn').classList.toggle('hidden', !isSaved);
+            updateCounts();
+        }
+
+        function setStatus(studentId, status) {
+            if (isSaved) return;
+            attendanceMap[studentId] = status;
+            const row = document.getElementById(`att-row-${studentId}`);
+            row.querySelectorAll('.att-btn').forEach(btn => {
+                const s = btn.getAttribute('data-status');
+                btn.className = `att-btn px-4 py-2 rounded-xl text-xs font-black uppercase transition-all `;
+                if (s === status) {
+                    if (s === 'present') btn.className += 'bg-emerald-500 text-white shadow-md shadow-emerald-200';
+                    else if (s === 'absent') btn.className += 'bg-rose-500 text-white shadow-md shadow-rose-200';
+                    else btn.className += 'bg-amber-500 text-white shadow-md shadow-amber-200';
+                } else {
+                    btn.className += 'bg-slate-100 text-slate-400 hover:bg-slate-200';
+                }
+            });
+            updateCounts();
+        }
+
+        function updateCounts() {
+            const vals = students.map(s => attendanceMap[s.id] || 'present');
+            document.getElementById('present-count').textContent = vals.filter(v => v === 'present').length;
+            document.getElementById('absent-count').textContent = vals.filter(v => v === 'absent').length;
+            document.getElementById('late-count').textContent = vals.filter(v => v === 'late').length;
+        }
+
+        async function saveAttendance() {
+            const date = document.getElementById('att-date').value;
+            const records = students.map(s => ({ student_id: s.id, status: attendanceMap[s.id] || 'present' }));
+            const result = await window.api.saveAttendance({ date, records });
+            if (result.success) {
+                showToast('Attendance saved & locked!');
+                isSaved = true;
+                renderList();
+                await loadHistory(); // Refresh history table
+            } else {
+                showToast('Failed to save.', 'error');
+            }
+        }
+
+        function enableEditing() {
+            isSaved = false;
+            renderList();
+            showToast('Editing enabled. Save when done!', 'success');
+        }
+
+        initClasses().then(() => {});
+    </script>
+</body>
+</html>
