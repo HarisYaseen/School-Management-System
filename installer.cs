@@ -1,3 +1,4 @@
+// SMS Installer v1.1 - Hardened Version
 using System;
 using System.IO;
 using System.IO.Compression;
