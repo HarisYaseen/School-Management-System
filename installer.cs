@@ -4,33 +4,30 @@ using System.IO.Compression;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 class SMSInstaller {
+
     static string AppName = "SMS Connect";
     static string FolderName = "SMSConnect";
     static string ExeName = "SMS Connect.exe";
-    
-    // Expected SHA256 hash of app.zip. 
-    // In a production build, this should be updated by the build script.
-    static string ExpectedSHA256 = ""; 
 
     static void Main() {
         Console.Title = AppName + " Installer";
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("========================================");
-        Console.WriteLine("     " + AppName + " Official Installer");
+        Console.WriteLine("  " + AppName + " Official Installer");
         Console.WriteLine("========================================");
         Console.ResetColor();
 
         bool success = false;
+
         try {
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string installPath = Path.Combine(localAppData, FolderName);
-            installPath = Path.GetFullPath(installPath); // Normalize
-            
+            // Normalize to prevent path confusion
+            installPath = Path.GetFullPath(installPath);
+
             // 1. Kill existing process if running
             Console.WriteLine("[+] Checking for running instances...");
             KillExistingProcesses();
@@ -38,30 +35,23 @@ class SMSInstaller {
             // 2. Clean up previous installation
             if (Directory.Exists(installPath)) {
                 Console.WriteLine("[!] Previous version found. Updating...");
-                try { 
-                    for(int i=0; i<3; i++) {
-                        try { Directory.Delete(installPath, true); break; }
-                        catch (Exception ex) { 
-                            Console.WriteLine("[!] Retry " + (i+1) + "/3: " + ex.Message);
-                            Thread.Sleep(1000); 
-                        }
+                for (int i = 0; i < 3; i++) {
+                    try {
+                        Directory.Delete(installPath, true);
+                        break;
+                    } catch (Exception ex) {
+                        Console.WriteLine("[!] Retry " + (i+1) + ": " + ex.Message);
+                        Thread.Sleep(1000);
                     }
-                } catch (Exception ex) { 
-                    Console.WriteLine("[!] Warning: Could not fully clean previous folder: " + ex.Message);
                 }
             }
 
             Directory.CreateDirectory(installPath);
             Console.WriteLine("[+] Destination: " + installPath);
-            
-            // 3. Extract Files
+
+            // 3. Load zip stream
             Assembly assembly = Assembly.GetExecutingAssembly();
             using (Stream zipStream = assembly.GetManifestResourceStream("app.zip")) {
-                if (zipStream == null) {
-                    // Fallback: Check if appended to end of EXE (common for simple stubs)
-                    zipStream = FindAppendedZip(Process.GetCurrentProcess().MainModule.FileName);
-                }
-
                 if (zipStream == null) {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("\n[!] Error: Application package (app.zip) not found inside the installer.");
@@ -69,28 +59,54 @@ class SMSInstaller {
                     return;
                 }
 
-                // Verify Checksum
-                if (!string.IsNullOrEmpty(ExpectedSHA256)) {
-                    Console.WriteLine("[+] Verifying integrity...");
-                    if (!VerifyChecksum(zipStream, ExpectedSHA256)) {
+                // 4. Verify SHA256 checksum before extracting
+                Console.WriteLine("[+] Verifying package integrity...");
+                byte[] zipBytes;
+                using (MemoryStream ms = new MemoryStream()) {
+                    zipStream.CopyTo(ms);
+                    zipBytes = ms.ToArray();
+                }
+
+                // Load expected hash from embedded resource (app.zip.sha256)
+                string expectedHash = null;
+                using (Stream hashStream = assembly.GetManifestResourceStream("app.zip.sha256")) {
+                    if (hashStream != null) {
+                        using (StreamReader reader = new StreamReader(hashStream)) {
+                            expectedHash = reader.ReadToEnd().Trim().ToLowerInvariant();
+                        }
+                    }
+                }
+
+                if (expectedHash != null) {
+                    string actualHash;
+                    using (SHA256 sha256 = SHA256.Create()) {
+                        actualHash = BitConverter.ToString(sha256.ComputeHash(zipBytes))
+                            .Replace("-", "").ToLowerInvariant();
+                    }
+                    if (actualHash != expectedHash) {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("\n[!] Error: Integrity check failed! The installer package may be corrupted or tampered with.");
+                        Console.WriteLine("\n[!] SECURITY ERROR: Package integrity check failed! Installation aborted.");
                         Console.ReadKey();
                         return;
                     }
-                    zipStream.Position = 0; // Reset for extraction
+                    Console.WriteLine("[+] Integrity check passed.");
+                } else {
+                    Console.WriteLine("[!] Warning: No checksum file found, skipping integrity check.");
                 }
 
+                // 5. Extract files with path traversal protection
                 Console.WriteLine("[+] Installing files (this may take a minute)...");
-                
-                using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Read)) {
+                using (MemoryStream ms = new MemoryStream(zipBytes))
+                using (ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read)) {
                     int total = archive.Entries.Count;
                     int count = 0;
+
                     foreach (ZipArchiveEntry entry in archive.Entries) {
-                        // Path Traversal Protection
+                        // PATH TRAVERSAL PROTECTION
                         string fullPath = Path.GetFullPath(Path.Combine(installPath, entry.FullName));
-                        if (!fullPath.StartsWith(installPath, StringComparison.OrdinalIgnoreCase)) {
-                            throw new Exception("Security Alert: Zip entry attempted path traversal: " + entry.FullName);
+                        if (!fullPath.StartsWith(installPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) {
+                            Console.WriteLine("\n[!] WARNING: Skipping suspicious path: " + entry.FullName);
+                            continue;
                         }
 
                         string dirPath = Path.GetDirectoryName(fullPath);
@@ -99,7 +115,7 @@ class SMSInstaller {
                         if (!string.IsNullOrEmpty(entry.Name)) {
                             entry.ExtractToFile(fullPath, true);
                         }
-                        
+
                         count++;
                         if (count % 20 == 0 || count == total) {
                             int percent = (int)((float)count / total * 100);
@@ -109,18 +125,19 @@ class SMSInstaller {
                 }
             }
 
-            // 4. Create Desktop Shortcut
+            // 6. Create Desktop Shortcut
             Console.WriteLine("\n[+] Creating desktop shortcut...");
             CreateDesktopShortcut(Path.Combine(installPath, ExeName));
 
-            // 5. Finalize
+            // 7. Launch app
             string appExe = Path.Combine(installPath, ExeName);
             if (File.Exists(appExe)) {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("\n[SUCCESS] " + AppName + " has been updated and installed.");
+                Console.WriteLine("\n[SUCCESS] " + AppName + " installed successfully.");
                 Console.WriteLine("[+] Launching application...");
-                ProcessStartInfo startInfo = new ProcessStartInfo(appExe);
-                startInfo.WorkingDirectory = installPath;
+                ProcessStartInfo startInfo = new ProcessStartInfo(appExe) {
+                    WorkingDirectory = installPath
+                };
                 Process.Start(startInfo);
                 success = true;
             }
@@ -128,45 +145,17 @@ class SMSInstaller {
         } catch (Exception ex) {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("\n[!] CRITICAL ERROR: " + ex.Message);
-            Console.WriteLine(ex.StackTrace);
         }
 
         Console.ResetColor();
+
+        // Only pause on failure so user can read the error
         if (!success) {
-            Console.WriteLine("\nInstallation finished with errors. Closing in 5 seconds...");
-            Thread.Sleep(5000);
+            Console.WriteLine("\nInstallation failed. Press any key to close...");
+            Console.ReadKey();
         } else {
-            Console.WriteLine("\nInstallation finished. Closing...");
-        }
-    }
-
-    static Stream FindAppendedZip(string selfPath) {
-        try {
-            FileStream fs = new FileStream(selfPath, FileMode.Open, FileAccess.Read);
-            byte[] buffer = new byte[4];
-            while (fs.Read(buffer, 0, 4) == 4) {
-                if (buffer[0] == 0x50 && buffer[1] == 0x4B && buffer[2] == 0x03 && buffer[3] == 0x04) {
-                    fs.Position -= 4;
-                    MemoryStream ms = new MemoryStream();
-                    fs.CopyTo(ms);
-                    ms.Position = 0;
-                    fs.Close();
-                    return ms;
-                }
-                fs.Position -= 3;
-            }
-            fs.Close();
-        } catch (Exception ex) {
-            Console.WriteLine("[!] Warning searching for payload: " + ex.Message);
-        }
-        return null;
-    }
-
-    static bool VerifyChecksum(Stream stream, string expected) {
-        using (SHA256 sha256 = SHA256.Create()) {
-            byte[] hashBytes = sha256.ComputeHash(stream);
-            string actual = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-            return actual.Equals(expected.ToLowerInvariant());
+            Console.WriteLine("\nInstallation complete. Closing in 3 seconds...");
+            Thread.Sleep(3000);
         }
     }
 
@@ -176,8 +165,8 @@ class SMSInstaller {
             try {
                 process.Kill();
                 process.WaitForExit(3000);
-            } catch (Exception ex) { 
-                Console.WriteLine("[!] Could not kill process " + process.Id + ": " + ex.Message);
+            } catch (Exception ex) {
+                Console.WriteLine("[!] Could not kill process: " + ex.Message);
             }
         }
     }
@@ -186,23 +175,24 @@ class SMSInstaller {
         try {
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             string shortcutLocation = Path.Combine(desktopPath, AppName + ".lnk");
-            
-            // Escape single quotes for PowerShell
-            string escapedShortcutLocation = shortcutLocation.Replace("'", "''");
-            string escapedTargetPath = targetPath.Replace("'", "''");
-            string escapedWorkingDir = Path.GetDirectoryName(targetPath).Replace("'", "''");
+
+            // POWERSHELL INJECTION FIX: escape single quotes in paths
+            string safeTarget = targetPath.Replace("'", "''");
+            string safeWorking = Path.GetDirectoryName(targetPath).Replace("'", "''");
+            string safeShortcut = shortcutLocation.Replace("'", "''");
 
             string script = $"$WshShell = New-Object -ComObject WScript.Shell; " +
-                           $"$Shortcut = $WshShell.CreateShortcut('{escapedShortcutLocation}'); " +
-                           $"$Shortcut.TargetPath = '{escapedTargetPath}'; " +
-                           $"$Shortcut.WorkingDirectory = '{escapedWorkingDir}'; " +
-                           $"$Shortcut.Save()";
+                            $"$Shortcut = $WshShell.CreateShortcut('{safeShortcut}'); " +
+                            $"$Shortcut.TargetPath = '{safeTarget}'; " +
+                            $"$Shortcut.WorkingDirectory = '{safeWorking}'; " +
+                            $"$Shortcut.Save()";
 
             ProcessStartInfo psi = new ProcessStartInfo("powershell", $"-Command \"{script}\"") {
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden
             };
             Process.Start(psi).WaitForExit();
+
         } catch (Exception ex) {
             Console.WriteLine("[!] Shortcut Error: " + ex.Message);
         }
