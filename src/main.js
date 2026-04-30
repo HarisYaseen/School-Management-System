@@ -810,27 +810,6 @@ ipcMain.handle('get-settings', () => {
     return obj;
 });
 
-ipcMain.handle('create-backup', async () => {
-    try {
-        const dDrivePath = 'D:\\SMS_Connect_Backups';
-        if (!fs.existsSync(dDrivePath)) {
-            fs.mkdirSync(dDrivePath, { recursive: true });
-        }
-        saveDB();
-        const userDataPath = app.getPath('userData');
-        const dbPath = path.join(userDataPath, 'database.sqlite');
-        if (!fs.existsSync(dbPath)) return { success: false, error: "Database file not found." };
-        
-        const dateStr = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-        const backupFileName = `SMS_Backup_${dateStr}.sqlite`;
-        const backupFilePath = path.join(dDrivePath, backupFileName);
-        fs.copyFileSync(dbPath, backupFilePath);
-        return { success: true, path: backupFilePath };
-    } catch (e) {
-        console.error('Backup error:', e.message);
-        return { success: false, error: e.message };
-    }
-});
 ipcMain.handle('save-settings', (e, data) => {
     Object.entries(data).forEach(([key, value]) => run('INSERT OR REPLACE INTO settings (key, value) VALUES (?,?)', [key, value]));
     return { success: true };
@@ -962,18 +941,5 @@ ipcMain.handle('save-subject', (e, d) => {
 });
 ipcMain.handle('delete-subject', (e, id) => run('DELETE FROM subjects WHERE id=?', [id]));
 
-ipcMain.handle('reset-database', () => {
-    try {
-        run('PRAGMA foreign_keys = OFF');
-        const tables = ['students', 'teachers', 'fees', 'inventories', 'sales', 'banks', 'bank_transactions', 'attendances'];
-        tables.forEach(t => run(`DELETE FROM ${t}`));
-        tables.forEach(t => run(`DELETE FROM sqlite_sequence WHERE name='${t}'`));
-        run('PRAGMA foreign_keys = ON');
-        return { success: true };
-    } catch (e) {
-        console.error('Reset error:', e.message);
-        return { success: false, error: e.message };
-    }
-});
 
 

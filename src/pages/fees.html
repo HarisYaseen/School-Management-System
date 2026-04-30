@@ -597,29 +597,53 @@
             document.getElementById('bulk-modal').classList.remove('hidden');
         }
 
+        let isBulkPrinting = false;
         async function printBulkChallans() {
+            if (isBulkPrinting) return;
             const classId = document.getElementById('bulk-class-id').value;
             if (!classId) return showToast('Select a class', 'error');
-            const [settings, allStudents, allFees] = await Promise.all([window.api.getSettings(), window.api.getStudents(), window.api.getFees()]);
-            const targetStudents = allStudents.filter(s => s.class_id == classId && s.status === 'active');
             
-            let finalHTML = '';
-            for (const student of targetStudents) {
-                const f = allFees.filter(fee => String(fee.student_id) === String(student.id));
-                const b = f.reduce((a, b) => a + (Number(b.debit || 0) - Number(b.credit || 0)), 0);
-                const h1 = generateChallanHTML(student, settings, b);
-                finalHTML += `<div style="page-break-after: always; padding: 10mm;">${h1}</div>`;
+            const btn = document.querySelector('#bulk-modal button[onclick="printBulkChallans()"]');
+            const originalText = btn.textContent;
+
+            try {
+                isBulkPrinting = true;
+                btn.disabled = true;
+                btn.textContent = 'Generating...';
+
+                const [settings, allStudents, allFees] = await Promise.all([window.api.getSettings(), window.api.getStudents(), window.api.getFees()]);
+                const targetStudents = allStudents.filter(s => s.class_id == classId && s.status === 'active');
+                
+                if (targetStudents.length === 0) {
+                    showToast('No active students found in this class.', 'error');
+                    return;
+                }
+
+                let finalHTML = '';
+                for (const student of targetStudents) {
+                    const f = allFees.filter(fee => String(fee.student_id) === String(student.id));
+                    const b = f.reduce((a, b) => a + (Number(b.debit || 0) - Number(b.credit || 0)), 0);
+                    const h1 = generateChallanHTML(student, settings, b);
+                    finalHTML += `<div style="page-break-after: always; padding: 10mm;">${h1}</div>`;
+                }
+                const win = window.open('', '_blank');
+                win.document.write(`<html><head><title>Bulk Print</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+                    <style>
+                        body { margin: 0; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+                        @media print { body { background: white; padding: 0; } }
+                    </style></head>
+                    <body>${finalHTML}<script>setTimeout(()=> { window.print(); window.close(); }, 1500);<\/script></body></html>`);
+                win.document.close();
+                document.getElementById('bulk-modal').classList.add('hidden');
+            } catch (err) {
+                console.error('Bulk print error:', err);
+                showToast('Failed to generate challans.', 'error');
+            } finally {
+                isBulkPrinting = false;
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
-            const win = window.open('', '_blank');
-            win.document.write(`<html><head><title>Bulk Print</title>
-                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
-                <style>
-                    body { margin: 0; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; align-items: center; gap: 40px; }
-                    @media print { body { background: white; padding: 0; } }
-                </style></head>
-                <body>${finalHTML}<script>setTimeout(()=> { window.print(); window.close(); }, 1500);<\/script></body></html>`);
-            win.document.close();
-            document.getElementById('bulk-modal').classList.add('hidden');
         }
 
         load();
