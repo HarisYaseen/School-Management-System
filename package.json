@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "build": "electron-builder --win"
+    "build": "electron-builder --win",
+    "lint": "eslint src/**/*.js"
   },
   "build": {
     "appId": "com.sms.connect",
@@ -27,12 +28,14 @@
     },
     "files": [
       "src/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/sql.js/**/*"
     ]
   },
   "devDependencies": {
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
+    "eslint": "^9.21.0",
     "tailwindcss": "^4.2.4"
   },
   "dependencies": {

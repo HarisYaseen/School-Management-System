@@ -34,10 +34,26 @@ A high-performance, offline-first School Management System built with **Vanilla 
    npm start
    ```
 
-3. **Build Installer**:
+3. **Lint Code**:
+   ```bash
+   npm run lint
+   ```
+
+4. **Build Installer**:
    ```bash
    npm run build
    ```
+
+## CI/CD and Dependencies
+
+Note: **Electron** is listed in `devDependencies`. This is intentional for local development and `electron-builder` usage. If deploying via a CI/CD pipeline that only installs production dependencies (`npm install --production`), ensure that `electron` and `electron-builder` are available or use `npm install` without the production flag to ensure the build environment is complete.
+
+## Security
+
+The custom C# installer (`installer.cs`) includes:
+- **SHA256 Integrity Verification**: Ensures the payload hasn't been tampered with.
+- **Path Traversal Protection**: Prevents malicious zip entries from writing outside the install directory.
+- **PowerShell Escaping**: Prevents command injection during shortcut creation.
 
 ## License
 
