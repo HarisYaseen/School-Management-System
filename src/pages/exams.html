@@ -204,6 +204,8 @@
                 return;
             }
 
+            const raw = await window.api.getStudents();
+            const allStudents = raw.filter(s => s.status !== 'deleted');
             const subjects = await window.api.getExamSubjects({ examId: selectedExamId, classId: activeClassId });
             renderSubjectTabs(subjects);
 
@@ -357,15 +359,22 @@
         function openExamModal() { document.getElementById('exam-modal').classList.remove('hidden'); }
         function closeExamModal() { document.getElementById('exam-modal').classList.add('hidden'); }
 
+        let isSavingExam = false;
         async function saveExam(e) {
             e.preventDefault();
-            const name = document.getElementById('e-name').value;
-            const date = document.getElementById('e-date').value;
-            const r = await window.api.createExam({ name, date });
-            if (r.success) {
-                closeExamModal();
-                showToast('Exam created successfully');
-                init();
+            if (isSavingExam) return;
+            isSavingExam = true;
+            try {
+                const name = document.getElementById('e-name').value;
+                const date = document.getElementById('e-date').value;
+                const r = await window.api.createExam({ name, date });
+                if (r.success) {
+                    closeExamModal();
+                    showToast('Exam created successfully');
+                    init();
+                }
+            } finally {
+                isSavingExam = false;
             }
         }
 

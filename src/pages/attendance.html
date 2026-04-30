@@ -303,7 +303,7 @@
             }
 
             const allStudents = await window.api.getStudents();
-            students = allStudents.filter(s => s.class_id == classId);
+            students = allStudents.filter(s => s.class_id == classId && s.status !== 'deleted');
 
             const existing = await window.api.getAttendance(date);
             attendanceMap = {};
@@ -435,17 +435,27 @@
             document.getElementById('late-count').textContent = vals.filter(v => v === 'late').length;
         }
 
+        let isSavingAtt = false;
         async function saveAttendance() {
-            const date = document.getElementById('att-date').value;
-            const records = students.map(s => ({ student_id: s.id, status: attendanceMap[s.id] || 'present' }));
-            const result = await window.api.saveAttendance({ date, records });
-            if (result.success) {
-                showToast('Attendance saved & locked!');
-                isSaved = true;
-                renderList();
-                await loadHistory(); // Refresh history table
-            } else {
-                showToast('Failed to save.', 'error');
+            if (isSavingAtt) return;
+            isSavingAtt = true;
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            try {
+                const date = document.getElementById('att-date').value;
+                const records = students.map(s => ({ student_id: s.id, status: attendanceMap[s.id] || 'present' }));
+                const result = await window.api.saveAttendance({ date, records });
+                if (result.success) {
+                    showToast('Attendance saved & locked!');
+                    isSaved = true;
+                    renderList();
+                    await loadHistory(); // Refresh history table
+                } else {
+                    showToast('Failed to save.', 'error');
+                }
+            } finally {
+                isSavingAtt = false;
+                btn.disabled = false;
             }
         }
 

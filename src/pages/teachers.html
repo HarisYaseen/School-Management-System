@@ -114,12 +114,19 @@
             document.getElementById('teacher-modal').classList.remove('hidden');
         }
 
+        let isSavingTeacher = false;
         async function saveTeacher(e) {
             e.preventDefault();
-            const data = { id: document.getElementById('t-id').value, name: document.getElementById('t-name').value, subject: document.getElementById('t-subject').value, contact: document.getElementById('t-contact').value };
-            const result = editingId ? await window.api.updateTeacher(data) : await window.api.createTeacher(data);
-            if (result.success) { document.getElementById('teacher-modal').classList.add('hidden'); showToast(editingId ? 'Teacher updated!' : 'Teacher added!'); load(); }
-            else showToast(result.error || 'Failed to save.', 'error');
+            if (isSavingTeacher) return;
+            isSavingTeacher = true;
+            try {
+                const data = { id: document.getElementById('t-id').value, name: document.getElementById('t-name').value, subject: document.getElementById('t-subject').value, contact: document.getElementById('t-contact').value };
+                const result = editingId ? await window.api.updateTeacher(data) : await window.api.createTeacher(data);
+                if (result.success) { document.getElementById('teacher-modal').classList.add('hidden'); showToast(editingId ? 'Teacher updated!' : 'Teacher added!'); load(); }
+                else showToast(result.error || 'Failed to save.', 'error');
+            } finally {
+                isSavingTeacher = false;
+            }
         }
 
         async function deleteTeacher(id, name) {
