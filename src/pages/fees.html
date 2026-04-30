@@ -184,6 +184,9 @@
                     window.api.getClasses()
                 ]);
 
+                // Audit Fix: Filter out soft-deleted students from UI
+                allStudents = allStudents.filter(s => s.status !== 'deleted');
+
                 const fClassSelect = document.getElementById('f-class-id');
                 if (fClassSelect) {
                     fClassSelect.innerHTML = '<option value="">— Select Class —</option>' + allClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -395,9 +398,7 @@
             document.getElementById('total-paid-val').textContent = formatCurrency(totalCredit);
             const netBalance = totalDebit - totalCredit;
             document.getElementById('net-balance-val').textContent = formatCurrency(netBalance);
-            if (recordsCount) recordsCount.textContent = rows.length;
-
-            table.innerHTML = [...rows].reverse().map((f, i) => `
+            if (recordsCount) recordsCount.textContent             table.innerHTML = [...rows].reverse().map((f, i) => `
                 <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50">
                     <td class="px-6 py-4 text-xs font-bold text-slate-400">${rows.length - i}</td>
                     <td class="px-6 py-4 text-[11px] text-slate-400 font-bold uppercase tracking-tighter">${formatDateTime(f.created_at)}</td>
@@ -407,61 +408,113 @@
                     <td class="px-6 py-4 text-sm font-black text-slate-800">${formatCurrency(f.balance)}</td>
                     <td class="px-6 py-4 flex gap-2">
                         <button onclick='printReceipt(${JSON.stringify(f)})' class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-400 hover:bg-indigo-100 flex items-center justify-center"><i class="fa-solid fa-print text-xs"></i></button>
+                        <button onclick="editFee(${JSON.stringify(f).replace(/"/g, '&quot;')})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-400 hover:bg-blue-100 flex items-center justify-center"><i class="fa-solid fa-edit text-xs"></i></button>
                         <button onclick="deleteFee(${f.id})" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-400 hover:bg-rose-100 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
                     </td>
                 </tr>`).join('');
         }
 
+        function editFee(f) {
+            document.getElementById('f-id').value = f.id;
+            document.getElementById('f-entry-type').value = f.debit > 0 ? 'charge' : 'payment';
+            document.getElementById('modal-title').textContent = 'Edit Transaction';
+            document.getElementById('amount-label').textContent = 'Amount (Rs.) *';
+            document.getElementById('save-btn').textContent = 'Update Transaction';
+            
+            document.getElementById('target-toggle-container').classList.add('hidden');
+            document.getElementById('target-toggle-container').classList.remove('flex');
+            document.getElementById('student-target-box').classList.remove('hidden');
+            document.getElementById('class-target-box').classList.add('hidden');
+
+            const s = allStudents.find(x => String(x.id) === String(f.student_id));
+            if (s) selectStudentModal(s.id, s.name);
+
+            document.getElementById('f-amount').value = f.amount;
+            document.getElementById('f-desc').value = f.description;
+            document.getElementById('f-type').value = f.type;
+            document.getElementById('fee-modal').classList.remove('hidden');
+        }
+
+        let isSavingFee = false;
         async function saveFee(e) {
             e.preventDefault();
+            if (isSavingFee) return;
+
             const isClass = document.getElementById('target-toggle') && document.getElementById('target-toggle').checked;
             const entryType = document.getElementById('f-entry-type').value;
             const amount = Number(document.getElementById('f-amount').value);
             const desc = document.getElementById('f-desc').value;
             const type = document.getElementById('f-type').value;
+            const fid = document.getElementById('f-id').value;
 
-            if (isClass) {
-                const cid = document.getElementById('f-class-id').value;
-                if (!cid) return showToast('Please select a class', 'error');
-                
-                const targetStudents = allStudents.filter(s => String(s.class_id) === String(cid) && s.status === 'active');
-                if (!targetStudents.length) return showToast('No active students found in this class', 'error');
-                
-                showToast(`Applying charge to ${targetStudents.length} students...`);
-                
-                const promises = targetStudents.map(s => {
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.textContent;
+            
+            try {
+                isSavingFee = true;
+                btn.disabled = true;
+                btn.textContent = 'Processing...';
+
+                if (isClass) {
+                    const cid = document.getElementById('f-class-id').value;
+                    if (!cid) return showToast('Please select a class', 'error');
+                    
+                    const targetStudents = allStudents.filter(s => String(s.class_id) === String(cid) && s.status === 'active');
+                    if (!targetStudents.length) return showToast('No active students found in this class', 'error');
+                    
+                    showToast(`Applying charge to ${targetStudents.length} students...`);
+                    
+                    const promises = targetStudents.map(s => {
+                        const data = { 
+                            student_id: s.id, 
+                            amount: amount, 
+                            debit: entryType === 'charge' ? amount : 0,
+                            credit: entryType === 'payment' ? amount : 0,
+                            description: desc, 
+                            type: type, 
+                            status: entryType === 'payment' ? 'paid' : 'unpaid'
+                        };
+                        return window.api.collectFee(data);
+                    });
+                    
+                    await Promise.all(promises);
+                    document.getElementById('fee-modal').classList.add('hidden'); 
+                    showToast('Bulk transaction recorded successfully!', 'success');
+                } else {
+                    const sid = document.getElementById('f-student-id').value;
+                    if (!sid) return showToast('Please select a student', 'error');
+                    
                     const data = { 
-                        student_id: s.id, 
+                        id: fid || null,
+                        student_id: sid, 
                         amount: amount, 
                         debit: entryType === 'charge' ? amount : 0,
                         credit: entryType === 'payment' ? amount : 0,
                         description: desc, 
                         type: type, 
-                        status: entryType === 'payment' ? 'paid' : 'unpaid'
+                        status: entryType === 'payment' ? 'paid' : 'unpaid',
+                        month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
                     };
-                    return window.api.collectFee(data);
-                });
-                
-                await Promise.all(promises);
-                document.getElementById('fee-modal').classList.add('hidden'); 
-                showToast('Bulk transaction recorded successfully!', 'success');
-                load();
-            } else {
-                const sid = document.getElementById('f-student-id').value;
-                if (!sid) return showToast('Please select a student', 'error');
-                
-                const data = { 
-                    student_id: sid, 
-                    amount: amount, 
-                    debit: entryType === 'charge' ? amount : 0,
-                    credit: entryType === 'payment' ? amount : 0,
-                    description: desc, 
-                    type: type, 
-                    status: entryType === 'payment' ? 'paid' : 'unpaid'
-                };
-                const result = await window.api.collectFee(data);
-                if (result.success) { document.getElementById('fee-modal').classList.add('hidden'); showToast('Transaction recorded!'); load(); }
+
+                    const result = fid ? await window.api.updateFee(data) : await window.api.collectFee(data);
+                    if (result.success) { 
+                        document.getElementById('fee-modal').classList.add('hidden'); 
+                        showToast(fid ? 'Record updated!' : 'Transaction recorded!'); 
+                    } else {
+                        showToast(result.error || 'Failed to save', 'error');
+                    }
+                }
+                await load();
+            } catch(err) {
+                logError('saveFee UI failed', err);
+                showToast('System error occurred', 'error');
+            } finally {
+                isSavingFee = false;
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
+        }
+          }
         }
 
         async function deleteFee(id) {

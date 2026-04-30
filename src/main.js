@@ -260,6 +260,34 @@ ipcMain.handle('login', (e, { schoolId, masterKey }) => {
     return { success: false, error: 'Invalid School ID or Security Key.' };
 });
 
+ipcMain.handle('create-backup', async () => {
+    try {
+        const { dialog } = require('electron');
+        const win = BrowserWindow.getFocusedWindow();
+        
+        // Audit Fix: Use Desktop as default path for universal compatibility
+        const defaultPath = path.join(app.getPath('desktop'), `SMS_Backup_${new Date().toISOString().split('T')[0]}.sqlite`);
+        
+        const result = await dialog.showSaveDialog(win, {
+            title: 'Export Database Backup',
+            defaultPath: defaultPath,
+            filters: [{ name: 'SQLite Database', extensions: ['sqlite'] }]
+        });
+
+        if (result.canceled || !result.filePath) return { success: false, error: 'Backup canceled.' };
+
+        saveDB(); // Ensure memory is synced to file first
+        const sourcePath = path.join(app.getPath('userData'), 'database.sqlite');
+        fs.copyFileSync(sourcePath, result.filePath);
+        
+        logInfo(`Backup created successfully at: ${result.filePath}`);
+        return { success: true, path: result.filePath };
+    } catch (err) {
+        logError('Backup failed', err);
+        return { success: false, error: err.message };
+    }
+});
+
 ipcMain.handle('upload-student-picture', async () => {
     try {
         const { dialog } = require('electron');
@@ -398,8 +426,61 @@ ipcMain.handle('create-student', (e, d) => {
         return { success: false, error: err.message };
     }
 });
-ipcMain.handle('update-student', (e, d) => run('UPDATE students SET name=?, roll_no=?, class_id=?, guardian_name=?, contact_number=?, monthly_fee=?, admission_fee=?, status=?, picture=?, gender=?, concession=? WHERE id=?', [d.name, d.roll_no, d.class_id, d.guardian_name, d.contact_number, d.monthly_fee || 0, d.admission_fee || 0, d.status || 'active', d.picture || null, d.gender || 'Male', d.concession || 0, d.id]));
-ipcMain.handle('delete-student', (e, id) => run('DELETE FROM students WHERE id=?', [id]));
+
+ipcMain.handle('reset-database', () => {
+    try {
+        db.run('BEGIN TRANSACTION');
+        db.run('DELETE FROM students');
+        db.run('DELETE FROM teachers');
+        db.run('DELETE FROM fees');
+        db.run('DELETE FROM attendances');
+        db.run('DELETE FROM sales');
+        db.run('DELETE FROM expenses');
+        db.run('DELETE FROM bank_transactions');
+        db.run("UPDATE banks SET balance = 0");
+        // Audit Fix: Clear fee generation state to allow re-generation after reset
+        db.run("DELETE FROM settings WHERE key = 'last_fee_generation_month'");
+        db.run('COMMIT');
+        saveDB();
+        return { success: true };
+    } catch (err) {
+        db.run('ROLLBACK');
+        logError('Database reset failed', err);
+        return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('update-student', (e, d) => {
+    try {
+        db.run('BEGIN TRANSACTION');
+        
+        // Audit Fix: If monthly_fee changed, update the current month's unpaid fee record if it exists
+        const oldStudent = queryOne('SELECT monthly_fee FROM students WHERE id=?', [d.id]);
+        const newFee = roundMoney(d.monthly_fee || 0);
+        
+        if (oldStudent && roundMoney(oldStudent.monthly_fee) !== newFee) {
+            const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+            // Update only unpaid tuition fees for the current month
+            db.run("UPDATE fees SET amount=?, debit=? WHERE student_id=? AND month=? AND status='unpaid' AND type='tuition'", 
+                [newFee, newFee, d.id, currentMonth]);
+        }
+
+        db.run('UPDATE students SET name=?, roll_no=?, class_id=?, guardian_name=?, contact_number=?, monthly_fee=?, admission_fee=?, status=?, picture=?, gender=?, concession=? WHERE id=?', 
+            [d.name, d.roll_no, d.class_id, d.guardian_name, d.contact_number, newFee, roundMoney(d.admission_fee || 0), d.status || 'active', d.picture || null, d.gender || 'Male', roundMoney(d.concession || 0), d.id]);
+        
+        db.run('COMMIT');
+        saveDB();
+        return { success: true };
+    } catch (err) {
+        db.run('ROLLBACK');
+        logError('update-student failed', err);
+        return { success: false, error: err.message };
+    }
+});
+ipcMain.handle('delete-student', (e, id) => {
+    logInfo(`Soft deleting student ID: ${id}`);
+    return run("UPDATE students SET status='deleted' WHERE id=?", [id]);
+});
 ipcMain.handle('promote-students', (e, { studentIds, targetClassId, newFee }) => {
     try {
         db.run('BEGIN TRANSACTION');
@@ -467,7 +548,10 @@ ipcMain.handle('delete-fee', (e, id) => {
     }
     return run('DELETE FROM fees WHERE id=?', [id]);
 });
-ipcMain.handle('update-fee', (e, d) => run('UPDATE fees SET student_id=?, amount=?, status=?, description=?, type=?, month=? WHERE id=?', [d.student_id, d.amount, d.status, d.description, d.type, d.month, d.id]));
+ipcMain.handle('update-fee', (e, d) => {
+    return run('UPDATE fees SET student_id=?, amount=?, debit=?, credit=?, status=?, description=?, type=?, month=? WHERE id=?', 
+        [d.student_id, roundMoney(d.amount), roundMoney(d.debit || 0), roundMoney(d.credit || 0), d.status, d.description, d.type, d.month, d.id]);
+});
 
 // ========================= INVENTORY =========================
 ipcMain.handle('get-inventory-stats', () => {
@@ -509,14 +593,14 @@ ipcMain.handle('checkout-inventory', (e, { inventory_id, qty: rawQty, descriptio
         db.run('BEGIN TRANSACTION');
         const item = queryOne('SELECT * FROM inventories WHERE id=?', [inventory_id]);
         if (!item || item.qty < qty) {
-            db.run('ROLLBACK');
-            return { success: false, error: 'Insufficient stock.' };
+            throw new Error('Insufficient stock.');
         }
         
         // Deduct Stock
         db.run('UPDATE inventories SET qty = qty - ? WHERE id=?', [qty, inventory_id]);
         
-        const total = qty * Number(item.sale_price);
+        const salePrice = roundMoney(item.sale_price);
+        const total = roundMoney(qty * salePrice);
         const saleStatus = status || 'paid';
         
         // Record Sale
@@ -524,16 +608,19 @@ ipcMain.handle('checkout-inventory', (e, { inventory_id, qty: rawQty, descriptio
         const currentDate = new Date().toISOString().split('T')[0];
         const now = new Date().toLocaleString('sv-SE').replace('T', ' '); 
         
-        db.run('INSERT INTO sales (uuid, inventory_id, student_id, qty, total_amount, status, description, date, created_at) VALUES (?,?,?,?,?,?,?,?,?)', 
-            [saleUuid, inventory_id, student_id || null, qty, total, saleStatus, description || item.item_name, currentDate, now]);
+        db.run('INSERT INTO sales (uuid, inventory_id, student_id, qty, total_amount, status, description, date, created_at, purchase_price) VALUES (?,?,?,?,?,?,?,?,?,?)', 
+            [saleUuid, inventory_id, student_id || null, qty, total, saleStatus, description || item.item_name, currentDate, now, roundMoney(item.purchase_price)]);
+
+        // Audit Fix: Use last_insert_rowid() safely
+        const saleIdRes = db.exec("SELECT last_insert_rowid() as id");
+        const saleId = saleIdRes[0].values[0][0];
 
         // Add to Student Ledger if student is selected
         if (student_id) {
-            const saleId = queryOne('SELECT id FROM sales ORDER BY id DESC LIMIT 1')?.id;
             const uid = 'sale_fee_' + Date.now().toString(36);
             const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-            db.run('INSERT INTO fees (uuid, student_id, sale_id, amount, status, description, type, month, created_at) VALUES (?,?,?,?,?,?,?,?,datetime("now", "localtime"))', 
-                [uid, student_id, saleId, total, saleStatus, `POS Purchase: ${description || item.item_name}`, 'inventory', currentMonth]);
+            db.run('INSERT INTO fees (uuid, student_id, sale_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,datetime("now", "localtime"))', 
+                [uid, student_id, saleId, total, total, (saleStatus === 'paid' ? total : 0), saleStatus, `POS Purchase: ${description || item.item_name}`, 'inventory', currentMonth]);
         }
 
         db.run('COMMIT');
@@ -541,8 +628,8 @@ ipcMain.handle('checkout-inventory', (e, { inventory_id, qty: rawQty, descriptio
         return { success: true };
     } catch (err) {
         db.run('ROLLBACK');
-        console.error('checkout-inventory error:', err);
-        return { success: false, error: 'System error during checkout.' };
+        logError('checkout-inventory failed', err);
+        return { success: false, error: err.message };
     }
 });
 ipcMain.handle('checkout-cart', (e, { items: cartItems, student_id, status, paid_amount: rawPaid }) => {

@@ -111,10 +111,14 @@
         let currentStatus = 'paid';
 
         async function load() {
-            [items, students] = await Promise.all([
+            let studentsRaw;
+            [items, studentsRaw] = await Promise.all([
                 window.api.getInventory(),
                 window.api.getStudents()
             ]);
+            // Audit Fix: Filter out soft-deleted students
+            students = studentsRaw.filter(s => s.status !== 'deleted');
+            
             renderItems();
             loadRecentSales();
         }
@@ -287,7 +291,9 @@
             renderInvoices(filtered);
         }
 
+        let isCheckingOut = false;
         async function checkout() {
+            if (isCheckingOut) return;
             const ids = Object.keys(cart).filter(id => cart[id] > 0);
             if (!ids.length) { showToast('Cart is empty!', 'error'); return; }
             
@@ -316,6 +322,7 @@
             };
 
             try {
+                isCheckingOut = true;
                 const result = await window.api.checkoutCart(cartData);
                 if (result.success) {
                     document.getElementById('inv-search-input').value = ''; 
@@ -330,6 +337,7 @@
             } catch (err) {
                 showToast('A system error occurred.', 'error');
             } finally {
+                isCheckingOut = false;
                 btn.disabled = false;
                 btn.innerHTML = oldHtml;
             }

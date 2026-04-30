@@ -224,9 +224,15 @@
         let classes = [];
 
         async function load() {
-            [allStudents, classes] = await Promise.all([window.api.getStudents(), window.api.getClasses()]);
+            let studentsRaw, classesRaw;
+            [studentsRaw, classesRaw] = await Promise.all([window.api.getStudents(), window.api.getClasses()]);
+            classes = classesRaw;
+            
+            // Audit Fix: Filter out soft-deleted students from active UI
+            allStudents = studentsRaw.filter(s => s.status !== 'deleted');
+            
             renderTable(allStudents);
-            document.getElementById('student-count').textContent = allStudents.length + ' total students';
+            document.getElementById('student-count').textContent = allStudents.length + ' active students';
             const sel = document.getElementById('s-class');
             const classHtml = '<option value="">Select Class</option>' + classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             sel.innerHTML = classHtml;
@@ -401,10 +407,10 @@
         }
 
         async function deleteStudent(id, name) {
-            if (!confirm(`Delete student "${name}"? This cannot be undone.`)) return;
+            if (!confirm(`Are you sure you want to remove student "${name}"? This will hide them from active lists but keep their historical records safe.`)) return;
             const result = await window.api.deleteStudent(id);
-            if (result.success) { showToast('Student deleted.'); load(); }
-            else showToast('Failed to delete.', 'error');
+            if (result.success) { showToast('Student removed successfully.'); load(); }
+            else showToast('Failed to remove student.', 'error');
         }
 
         async function openPromoteModal() {
