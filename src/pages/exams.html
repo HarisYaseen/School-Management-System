@@ -271,28 +271,35 @@
             `).join('');
         }
 
+        let isSavingMarks = false;
         async function saveAllMarks() {
-            const inputs = document.querySelectorAll('.mark-input');
-            const subjects = await window.api.getExamSubjects({ examId: selectedExamId, classId: activeClassId });
-            const totalMarks = subjects.find(s => s.subject_name === activeSubject)?.total_marks || 100;
+            if (isSavingMarks) return;
+            isSavingMarks = true;
+            try {
+                const inputs = document.querySelectorAll('.mark-input');
+                const subjects = await window.api.getExamSubjects({ examId: selectedExamId, classId: activeClassId });
+                const totalMarks = subjects.find(s => s.subject_name === activeSubject)?.total_marks || 100;
 
-            const promises = [];
-            inputs.forEach(input => {
-                const val = input.value;
-                if (val !== '') {
-                    promises.push(window.api.saveExamResult({
-                        exam_id: selectedExamId,
-                        student_id: input.dataset.sid,
-                        subject_name: activeSubject,
-                        total_marks: totalMarks,
-                        obtained_marks: parseFloat(val)
-                    }));
-                }
-            });
+                const promises = [];
+                inputs.forEach(input => {
+                    const val = input.value;
+                    if (val !== '') {
+                        promises.push(window.api.saveExamResult({
+                            exam_id: selectedExamId,
+                            student_id: input.dataset.sid,
+                            subject_name: activeSubject,
+                            total_marks: totalMarks,
+                            obtained_marks: parseFloat(val)
+                        }));
+                    }
+                });
 
-            await Promise.all(promises);
-            showToast('All marks saved successfully!', 'success');
-            loadResults();
+                await Promise.all(promises);
+                showToast('All marks saved successfully!', 'success');
+                loadResults();
+            } finally {
+                isSavingMarks = false;
+            }
         }
 
         async function addSubjectToClass() {

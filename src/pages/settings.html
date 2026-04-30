@@ -65,7 +65,7 @@
                 <!-- System Backup -->
                 <div class="bg-indigo-50 p-10 rounded-[2rem] border border-indigo-100">
                     <h3 class="text-xl font-black text-indigo-800 mb-2">System Backup</h3>
-                    <p class="text-sm text-indigo-600 mb-8 font-medium">Create an instant backup of your complete database. Files will be saved securely to your D:\SMS_Connect_Backups folder.</p>
+                    <p class="text-sm text-indigo-600 mb-8 font-medium">Create an instant backup of your complete database. Files will be saved to a location you choose.</p>
                     <button onclick="handleBackup()" class="bg-indigo-500 text-white px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
                         <i class="fa-solid fa-hard-drive mr-2"></i> Create Backup
                     </button>
@@ -260,13 +260,14 @@
         }
 
         async function handleReset() {
-            if (!confirm("Are you sure? This is IRREVERSIBLE.")) return;
+            if (!confirm("Are you sure? This will DELETE ALL students, fees, and records. This is IRREVERSIBLE.")) return;
+            if (!confirm("FINAL WARNING: All data will be permanently deleted. Type OK to confirm.")) return;
             const result = await window.api.resetDatabase();
             if (result.success) { showToast('Database reset!'); setTimeout(() => window.location.reload(), 1500); }
         }
 
         async function handleBackup() {
-            if (confirm('Create a backup on your D:\\ drive?')) {
+            if (confirm('Create a backup? You will be asked to choose where to save it.')) {
                 showToast('Creating backup...', 'info');
                 const result = await window.api.createBackup();
                 if (result.success) {
