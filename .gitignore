@@ -27,6 +27,5 @@ Thumbs.db
 *.exe
 *.zip
 *.asar
-/installer_source/
 /SMS_Connect_Installer*
 /scratch/
