@@ -30,7 +30,7 @@
     <div id="sidebar-container"></div>
     <main class="flex-1 flex flex-col h-screen overflow-hidden">
         <div id="topbar-container"></div>
-        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-4 md:p-10">
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
             <div class="max-w-[1600px] mx-auto">
                 <div class="flex justify-between items-center mb-8">
                     <div>
@@ -38,11 +38,8 @@
                         <p class="text-sm text-slate-400 font-medium mt-1" id="student-count">Loading...</p>
                     </div>
                      <div class="flex gap-3">
-                        <select id="class-filter" onchange="filterStudents()" class="premium-input bg-white px-4 py-3 rounded-xl text-sm font-medium w-40 no-print">
+                        <select id="class-filter" onchange="filterStudents()" class="premium-input bg-white px-4 py-3 rounded-xl text-sm font-medium w-48 no-print">
                             <option value="">All Classes</option>
-                        </select>
-                        <select id="session-filter" onchange="filterStudents()" class="premium-input bg-white px-4 py-3 rounded-xl text-sm font-medium w-40 no-print">
-                            <option value="">All Sessions</option>
                         </select>
                         <input type="text" id="search-filter" onkeyup="filterStudents()" placeholder="Search students..." class="premium-input bg-white px-4 py-3 rounded-xl text-sm font-medium w-64 no-print">
                         <button onclick="printStudentList()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-200 transition-all no-print">
@@ -59,24 +56,24 @@
                         </button>
                     </div>
                 </div>
-
-                <div class="bg-white rounded-[3rem] shadow-sm border-2 border-prime/5 overflow-hidden">
-                    <table class="w-full border-collapse">
-                        <thead class="bg-slate-50 border-b-2 border-slate-100 sticky top-0 z-10">
+                <div class="bg-white rounded-[2rem] shadow-sm border-2 border-prime/10 overflow-hidden relative">
+                    <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-9xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-100">
                             <tr>
-                                <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest pl-8">#</th>
-                                <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
-                                <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Roll No</th>
-                                <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Class</th>
-                                <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Guardian</th>
-                                <th class="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</th>
-                                <th class="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender</th>
-                                <th class="px-4 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tuition Fee</th>
-                                <th class="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest pr-8">Actions</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">#</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Name</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Roll No</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Class</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Guardian</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Contact</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Gender</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Tuition Fee</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Status</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="student-table-body" class="divide-y divide-slate-50"></tbody>
+                        <tbody id="students-table" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
             </div>
@@ -126,12 +123,6 @@
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Class *</label>
                                 <select id="s-class" class="premium-input bg-slate-50 w-full px-4 py-2.5 rounded-xl text-sm font-bold" required></select>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Academic Session *</label>
-                                <select id="s-session" class="premium-input bg-slate-50 w-full px-4 py-2.5 rounded-xl text-sm font-bold" required></select>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1">
                             <div>
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Gender *</label>
                                 <select id="s-gender" class="premium-input bg-slate-50 w-full px-4 py-2.5 rounded-xl text-sm font-bold" required>
@@ -262,97 +253,78 @@
         let classes = [];
 
         async function load() {
-            let studentsRaw, classesRaw, sessionsRaw;
-            [studentsRaw, classesRaw, sessionsRaw] = await Promise.all([
-                window.api.getStudents(), 
-                window.api.getClasses(),
-                window.api.getSessions()
-            ]);
+            let studentsRaw, classesRaw;
+            [studentsRaw, classesRaw] = await Promise.all([window.api.getStudents(), window.api.getClasses()]);
             classes = classesRaw;
             
             // Audit Fix: Filter out soft-deleted students from active UI
             allStudents = studentsRaw.filter(s => s.status !== 'deleted');
             
-            // Populate Classes
-            const classHtml = '<option value="">Select Class</option>' + classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            document.getElementById('s-class').innerHTML = classHtml;
-            document.getElementById('class-filter').innerHTML = '<option value="">All Classes</option>' + classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            document.getElementById('p-from-class').innerHTML = classHtml;
-            document.getElementById('p-to-class').innerHTML = classHtml;
-
-            // Populate Sessions
-            const sessionHtml = '<option value="">Select Session</option>' + sessionsRaw.map(s => `<option value="${s.id}" ${s.is_active ? 'selected' : ''}>${s.name}</option>`).join('');
-            document.getElementById('s-session').innerHTML = sessionHtml;
-            document.getElementById('session-filter').innerHTML = '<option value="">All Sessions</option>' + sessionsRaw.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-
-            // Check URL Params
-            const params = new URLSearchParams(window.location.search);
-            const sessParam = params.get('session');
-            if (sessParam) {
-                document.getElementById('session-filter').value = sessParam;
-            }
-
-            filterStudents(); // Apply initial filters
+            renderTable(allStudents);
             document.getElementById('student-count').textContent = allStudents.length + ' active students';
+            const sel = document.getElementById('s-class');
+            const classHtml = '<option value="">Select Class</option>' + classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            sel.innerHTML = classHtml;
+            
+            const filterSel = document.getElementById('class-filter');
+            filterSel.innerHTML = '<option value="">All Classes</option>' + classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
 
         async function renderTable(data) {
-            const tbody = document.getElementById('student-table-body');
+            const tbody = document.getElementById('students-table');
             const rows = await Promise.all(data.map(async (s, i) => {
                 let picUrl = '';
                 if (s.picture) {
-                    const res = await window.api.getStudentPictureUrl(s.picture);
-                    if (res && res.success) picUrl = res.url;
+                    const url = await window.api.getStudentPictureUrl(s.picture);
+                    if (url) picUrl = url;
                 }
                 
                 return `
-                <tr class="hover:bg-slate-50/50 transition-colors group">
-                    <td class="px-6 py-4 text-xs font-bold text-slate-400 pl-8">${i + 1}</td>
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-6 py-4 text-sm font-bold text-slate-400">${i + 1}</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-prime/5 flex items-center justify-center text-prime font-black text-[10px] overflow-hidden">
-                                ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover">` : s.name.charAt(0)}
+                            <div class="w-10 h-10 rounded-xl bg-prime/10 overflow-hidden flex items-center justify-center">
+                                ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover">` : `<span class="text-prime font-black text-sm">${s.name.charAt(0)}</span>`}
                             </div>
-                            <span class="text-sm font-black text-slate-700">${s.name}</span>
+                            <span class="font-bold text-slate-700">${s.name}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-xs font-bold text-slate-500">${s.roll_no}</td>
-                    <td class="px-6 py-4 text-xs font-bold text-slate-500">${s.class_name || 'N/A'}</td>
-                    <td class="px-6 py-4 text-xs font-bold text-slate-500">${s.guardian_name || '—'}</td>
-                    <td class="px-4 py-4 text-xs font-bold text-slate-400 font-mono">${s.contact_number || '—'}</td>
-                    <td class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase">${s.gender || 'Male'}</td>
-                    <td class="px-4 py-4 text-xs font-black text-slate-700">Rs. ${parseFloat(s.monthly_fee || 0).toLocaleString()}</td>
-                    <td class="px-4 py-4 text-center">
-                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${s.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${s.status}</span>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-600">${s.roll_no}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-600">${s.class_name || '—'}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-slate-500">${s.guardian_name || '—'}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-slate-500">${s.contact_number || '—'}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-600">${s.gender || 'Male'}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-prime">
+                        Rs. ${formatNum(s.monthly_fee || 0)}
                     </td>
-                    <td class="px-6 py-4 text-right pr-8">
-                        <div class="flex justify-end gap-1 transition-all">
-                            <button onclick="window.location.href='biodata.html?id=${s.id}'" title="Biodata" class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><i class="fa-solid fa-id-card text-[10px]"></i></button>
-                            <button onclick="editStudent(${s.id})" title="Edit" class="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-prime hover:text-white transition-all"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                            <button onclick="openWithdrawModal(${s.id}, '${s.name.replace(/'/g, "\\'")}')" title="Withdraw" class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all"><i class="fa-solid fa-user-slash text-[10px]"></i></button>
-                            <button onclick="window.location.href='fees.html?student=${s.id}'" title="Fees" class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all"><i class="fa-solid fa-wallet text-[10px]"></i></button>
-                            <button onclick="sendWhatsApp('${s.contact_number}', '${s.name.replace(/'/g, "\\'")}')" title="WhatsApp" class="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all"><i class="fa-brands fa-whatsapp text-[10px]"></i></button>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase ${s.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${s.status}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button onclick="window.location.href='biodata.html?id=${s.id}'" class="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-all flex items-center justify-center" title="View Biodata"><i class="fa-solid fa-id-card text-xs"></i></button>
+                            <button onclick="editStudent(${s.id})" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all flex items-center justify-center" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="openWithdrawModal(${s.id}, '${s.name.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600 transition-all flex items-center justify-center" title="Withdraw/Struck-off"><i class="fa-solid fa-user-slash text-xs"></i></button>
+                            <button onclick="window.location.href='fees.html?student=${s.id}'" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-all flex items-center justify-center" title="Fees"><i class="fa-solid fa-wallet text-xs"></i></button>
                         </div>
                     </td>
                 </tr>`;
             }));
 
-            tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="10" class="text-center py-16 text-slate-300 font-bold">No students found.</td></tr>';
+            tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="10" class="text-center py-16 text-slate-300 font-bold">No students found. Add your first student!</td></tr>';
         }
 
         function filterStudents() {
             const q = document.getElementById('search-filter').value.toLowerCase();
             const classId = document.getElementById('class-filter').value;
-            const sessionId = document.getElementById('session-filter').value;
             
             const filtered = allStudents.filter(s => {
                 const matchesSearch = s.name.toLowerCase().includes(q) || s.roll_no.toLowerCase().includes(q);
                 const matchesClass = !classId || s.class_id == classId;
-                const matchesSession = !sessionId || s.session_id == sessionId;
-                return matchesSearch && matchesClass && matchesSession;
+                return matchesSearch && matchesClass;
             });
             renderTable(filtered);
-            document.getElementById('student-count').textContent = filtered.length + ' students found';
         }
 
         let editingId = null;
@@ -362,7 +334,6 @@
             document.getElementById('student-modal').classList.remove('hidden');
             ['s-id','s-name','s-roll','s-fee','s-admission-fee','s-guardian','s-contact','s-picture','s-concession','s-family','s-dob','s-blood','s-address'].forEach(f => document.getElementById(f).value = '');
             document.getElementById('s-class').value = '';
-            document.getElementById('s-session').value = '';
             document.getElementById('s-gender').value = 'Male';
             document.getElementById('s-religion').value = 'Islam';
             document.getElementById('status-field').classList.add('hidden');
@@ -383,7 +354,6 @@
             document.getElementById('s-name').value = s.name;
             document.getElementById('s-roll').value = s.roll_no;
             document.getElementById('s-class').value = s.class_id;
-            document.getElementById('s-session').value = s.session_id || '';
             document.getElementById('s-fee').value = s.monthly_fee || 0;
             document.getElementById('s-admission-fee').value = s.admission_fee || 0;
             document.getElementById('s-guardian').value = s.guardian_name || '';
@@ -399,10 +369,10 @@
             document.getElementById('s-address').value = s.address || '';
             
             if (s.picture) {
-                const res = await window.api.getStudentPictureUrl(s.picture);
-                if (res && res.success) {
+                const url = await window.api.getStudentPictureUrl(s.picture);
+                if (url) {
                     const img = document.getElementById('pic-preview');
-                    img.src = res.url;
+                    img.src = url;
                     document.getElementById('pic-wrapper').classList.remove('hidden');
                     document.getElementById('pic-preview-container').classList.add('hidden');
                 }
@@ -423,13 +393,13 @@
                     return;
                 }
                 
-                if (result && result.success) {
-                    const fileName = result.fileName;
+                if (result) {
+                    const fileName = result;
                     document.getElementById('s-picture').value = fileName;
-                    const res = await window.api.getStudentPictureUrl(fileName);
-                    if (res && res.success) {
+                    const url = await window.api.getStudentPictureUrl(fileName);
+                    if (url) {
                         const img = document.getElementById('pic-preview');
-                        img.src = res.url;
+                        img.src = url;
                         document.getElementById('pic-wrapper').classList.remove('hidden');
                         document.getElementById('pic-preview-container').classList.add('hidden');
                     }
@@ -464,7 +434,6 @@
                 blood_group: document.getElementById('s-blood').value,
                 religion: document.getElementById('s-religion').value,
                 address: document.getElementById('s-address').value,
-                session_id: document.getElementById('s-session').value,
             };
             try {
                 const result = editingId ? await window.api.updateStudent(data) : await window.api.createStudent(data);
@@ -476,15 +445,6 @@
                 btn.disabled = false;
                 btn.textContent = oldText;
             }
-        }
-
-        function sendWhatsApp(number, name) {
-            if (!number) return showToast('No contact number available.', 'error');
-            let clean = number.replace(/\D/g, '');
-            if (clean.startsWith('0')) clean = '92' + clean.substring(1);
-            else if (clean.length === 10) clean = '92' + clean;
-            const msg = encodeURIComponent(`Assalamu Alaikum, this is Capt. Irfan Shaheed School System. Regarding student: ${name}.`);
-            window.api.openUrl(`whatsapp://send?phone=${clean}&text=${msg}`);
         }
 
         async function deleteStudent(id, name) {

@@ -1,6 +1,6 @@
 {
   "name": "sms-connect",
-  "version": "1.0.8",
+  "version": "1.1.14",
   "description": "School Management System - Electron Edition",
   "main": "src/main.js",
   "scripts": {
@@ -12,6 +12,11 @@
   "build": {
     "appId": "com.sms.connect",
     "productName": "SMS Connect",
+    "publish": {
+      "provider": "github",
+      "owner": "HarisYaseen",
+      "repo": "SMS-Release"
+    },
     "directories": {
       "output": "dist"
     },
@@ -39,6 +44,7 @@
     "tailwindcss": "^4.2.4"
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "sql.js": "^1.14.1"
   }
 }

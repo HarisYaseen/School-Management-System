@@ -247,20 +247,14 @@
         btn.textContent = 'LOGGING IN...';
         btn.disabled = true;
 
-        try {
-            const result = await window.api.login({ schoolId, masterKey });
-            if (result.success) {
-                sessionStorage.clear();
-                sessionStorage.setItem('user', JSON.stringify(result.user));
-                localStorage.setItem('remembered_id', schoolId);
-                window.location.href = 'dashboard.html';
-            } else {
-                showToast(result.error || 'Invalid Credentials', 'error');
-                btn.textContent = oldText;
-                btn.disabled = false;
-            }
-        } catch (err) {
-            showToast('Login Failed: ' + err.message, 'error');
+        const result = await window.api.login({ schoolId, masterKey });
+        
+        if (result.success) {
+            localStorage.setItem('remembered_id', schoolId);
+            sessionStorage.setItem('user', JSON.stringify(result.user));
+            window.location.href = 'dashboard.html';
+        } else {
+            showToast(result.error || 'Invalid ID or Key', 'error');
             btn.textContent = oldText;
             btn.disabled = false;
         }

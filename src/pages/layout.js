@@ -4,118 +4,128 @@ function getUser() {
 }
 
 function requireAuth() {
-    if (!getUser()) { window.location.href = 'gateway.html'; }
-}
+    const user = getUser();
+    if (!user) { 
+        window.location.href = 'gateway.html'; 
+        return;
+    }
 
-function logout() {
-    sessionStorage.removeItem('user');
-    window.location.href = 'gateway.html';
-}
+    // NORMALIZE USER DATA
+    const role = (user.role || 'staff').toLowerCase().trim();
+    let perms = [];
+    try {
+        const p = user.permissions;
+        perms = typeof p === 'string' ? JSON.parse(p) : (p || []);
+    } catch(e) { perms = []; }
+    perms = perms.map(p => p.toLowerCase());
 
-function setActiveNav(page) {
-    document.querySelectorAll('.nav-item').forEach(a => {
-        a.classList.remove('bg-white', 'text-prime', 'shadow-lg');
-        a.classList.add('text-white', 'hover:bg-white/10');
-        a.querySelector('i')?.classList.remove('text-prime');
-        a.querySelector('i')?.classList.add('text-white/60');
-    });
-    const active = document.querySelector(`.nav-item[data-page="${page}"]`);
-    if (active) {
-        active.classList.add('bg-white', 'text-prime', 'shadow-lg');
-        active.classList.remove('text-white', 'hover:bg-white/10');
-        active.querySelector('i')?.classList.add('text-prime');
-        active.querySelector('i')?.classList.remove('text-white/60');
+    const path = window.location.pathname.toLowerCase();
+    
+    // HARD BLOCK FOR STAFF
+    if (role !== 'admin') {
+        const restrictedKeywords = ['fees', 'bank', 'inventory', 'pos', 'expenses', 'staff', 'users', 'reports', 'settings'];
+        const isRestricted = restrictedKeywords.some(kw => path.includes(kw));
+        
+        // If they only have 'academic' permission, they can ONLY see dashboard, reminders, and academic pages.
+        if (isRestricted && !perms.includes('hr') && !perms.includes('finance') && !perms.includes('pos')) {
+            console.error('NUCLEAR BLOCK: Unauthorized Access Attempt to', path);
+            window.location.href = 'dashboard.html';
+        }
     }
 }
 
-function showToast(msg, type = 'success') {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-    const t = document.createElement('div');
-    t.className = `toast ${type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`;
-    t.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'circle-check' : 'circle-exclamation'} mr-2"></i>${msg}`;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-}
-
-function formatNum(n) { return new Intl.NumberFormat().format(Number(n) || 0); }
-function formatCurrency(n) { return 'Rs. ' + formatNum(n); }
-function formatDate(d) { if (!d) return '—'; return new Date(d.toString().replace(' ', 'T')).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }); }
-function formatDateTime(d) { if (!d) return '—'; return new Date(d.toString().replace(' ', 'T')).toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }); }
-
-function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
-
 function buildSidebar(activePage) {
+    const user = getUser();
+    const role = (user?.role || 'staff').toLowerCase().trim();
+    let perms = [];
+    try {
+        const p = user?.permissions;
+        perms = typeof p === 'string' ? JSON.parse(p) : (p || []);
+    } catch(e) { perms = []; }
+    perms = perms.map(p => p.toLowerCase());
+
+    const isAdmin = role === 'admin';
+
     const groups = [
-        {
-            label: 'General',
-            items: [
-                { page: 'dashboard', icon: 'fa-grip-vertical', label: 'Dashboard', href: 'dashboard.html' }
-            ]
-        },
-        {
-            label: 'Academic',
-            items: [
-                { page: 'students', icon: 'fa-user-graduate', label: 'Students', href: 'students.html' },
-                { page: 'teachers', icon: 'fa-chalkboard-user', label: 'Teachers', href: 'teachers.html' },
-                { page: 'attendance', icon: 'fa-calendar-check', label: 'Attendance', href: 'attendance.html' },
-                { page: 'exams', icon: 'fa-graduation-cap', label: 'Exams & DMC', href: 'exams.html' },
-                { page: 'diary', icon: 'fa-book-open', label: 'Daily Diary', href: 'diary.html' }
-            ]
-        },
-        {
-            label: 'Finance',
-            items: [
-                { page: 'fees', icon: 'fa-wallet', label: 'Fees', href: 'fees.html' },
-                { page: 'fee-structure', icon: 'fa-file-invoice-dollar', label: 'Fee Structure', href: 'fee_structure.html' },
-                { page: 'expenses', icon: 'fa-receipt', label: 'Expenses', href: 'expenses.html' },
-                { page: 'bank', icon: 'fa-building-columns', label: 'Bank', href: 'bank.html' }
-            ]
-        },
-        {
-            label: 'Shop & Stock',
-            items: [
-                { page: 'inventory', icon: 'fa-boxes-stacked', label: 'Inventory', href: 'inventory.html' },
-                { page: 'pos', icon: 'fa-cash-register', label: 'Point of Sale', href: 'pos.html' }
-            ]
-        },
-        {
-            label: 'System',
-            items: [
-                { page: 'settings', icon: 'fa-gear', label: 'Settings', href: 'settings.html' }
-            ]
-        }
+        { label: 'General', items: [
+            { page: 'dashboard', icon: 'fa-grip-vertical', label: 'Dashboard', href: 'dashboard.html' },
+            { page: 'reminders', icon: 'fa-bell', label: 'Reminders', href: 'reminders.html' },
+            { page: 'sms', icon: 'fa-comment-sms', label: 'SMS Portal', href: 'sms.html' }
+        ]},
+        { label: 'Academic', perm: 'academic', items: [
+            { page: 'students', icon: 'fa-user-graduate', label: 'Students', href: 'students.html' },
+            { page: 'teachers', icon: 'fa-chalkboard-user', label: 'Teachers', href: 'teachers.html' },
+            { page: 'attendance', icon: 'fa-calendar-check', label: 'Attendance', href: 'attendance.html' },
+            { page: 'exams', icon: 'fa-graduation-cap', label: 'Exams & DMC', href: 'exams.html' },
+            { page: 'timetable', icon: 'fa-calendar-days', label: 'Timetable', href: 'timetable.html' },
+            { page: 'diary', icon: 'fa-book-open', label: 'Daily Diary', href: 'diary.html' },
+            { page: 'certificates', icon: 'fa-certificate', label: 'Certificates', href: 'certificates.html' },
+            { page: 'id_cards', icon: 'fa-id-card', label: 'ID Cards', href: 'id_cards.html' },
+            { page: 'biodata', icon: 'fa-address-card', label: 'Student Biodata', href: 'biodata.html' }
+        ]},
+        { label: 'Finance', perm: 'finance', items: [
+            { page: 'fees', icon: 'fa-wallet', label: 'Fee Collection', href: 'fees.html' },
+            { page: 'fee_structure', icon: 'fa-list-check', label: 'Fee Structure', href: 'fee_structure.html' },
+            { page: 'bank', icon: 'fa-building-columns', label: 'Bank & Cash', href: 'bank.html' },
+            { page: 'expenses', icon: 'fa-money-bill-transfer', label: 'Expenses', href: 'expenses.html' },
+            { page: 'transport', icon: 'fa-bus', label: 'Transport', href: 'transport.html' },
+            { page: 'withdrawals', icon: 'fa-hand-holding-dollar', label: 'Withdrawals', href: 'withdrawals.html' }
+        ]},
+        { label: 'Shop', perm: 'pos', items: [
+            { page: 'inventory', icon: 'fa-boxes-stacked', label: 'Inventory', href: 'inventory.html' },
+            { page: 'pos', icon: 'fa-cash-register', label: 'Point of Sale', href: 'pos.html' }
+        ]},
+        { label: 'Management', perm: 'hr', items: [
+            { page: 'staff', icon: 'fa-user-tie', label: 'Staff HR', href: 'staff.html' },
+            { page: 'users', icon: 'fa-user-gear', label: 'User Roles', href: 'users.html' },
+            { page: 'sessions', icon: 'fa-clock-rotate-left', label: 'Sessions', href: 'sessions.html' }
+        ]},
+        { label: 'System', items: [
+            { page: 'reports', icon: 'fa-chart-pie', label: 'Reports', href: 'reports.html' },
+            { page: 'settings', icon: 'fa-gear', label: 'Settings', href: 'settings.html' }
+        ]}
     ];
 
+    const filtered = groups.map(g => {
+        if (isAdmin) return g;
+        if (g.perm && !perms.includes(g.perm)) return null;
+        return g;
+    }).filter(g => g !== null);
+
     return `
-    <aside class="w-24 hover:w-72 bg-prime text-white flex flex-col h-screen shadow-2xl relative z-20 transition-all duration-300 ease-in-out group/sidebar flex-shrink-0">
-        <div class="min-h-[6rem] py-4 flex items-center px-7 overflow-hidden">
-            <div class="flex items-center gap-4">
-                <div class="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                    <i class="fa-solid fa-graduation-cap text-white text-xl"></i>
-                </div>
-                <h1 id="sidebar-logo-text" class="text-lg font-black tracking-widest uppercase text-white/90 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 leading-tight py-2">
-                    SMS <span style="color:#fb7185;text-decoration:underline">Connect</span>
-                </h1>
-            </div>
+    <aside class="w-24 hover:w-72 bg-prime text-white flex flex-col h-screen shadow-2xl relative z-20 transition-all duration-300 group/sidebar">
+        <div class="p-6 flex items-center gap-4 flex-shrink-0">
+             <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-graduation-cap text-lg"></i></div>
+             <span id="sidebar-logo-text" class="font-black text-lg opacity-0 invisible group-hover/sidebar:opacity-100 group-hover/sidebar:visible transition-all duration-300 whitespace-normal break-words max-w-[180px] uppercase tracking-tighter">SMS CONNECT</span>
         </div>
-        <nav class="flex-1 px-4 py-4 space-y-6 overflow-y-scroll sidebar-scroll overflow-x-hidden">
-            ${groups.map(group => `
-                <div class="space-y-2">
-                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] px-4 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300">${group.label}</p>
-                    ${group.items.map(item => `
-                    <a href="${item.href}" class="nav-item ${activePage === item.page ? 'bg-white text-prime shadow-lg' : 'text-white hover:bg-white/10'} flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group" data-page="${item.page}">
-                        <i class="fa-solid ${item.icon} flex-shrink-0 w-6 text-center text-lg ${activePage === item.page ? 'text-prime' : 'text-white/60 group-hover:text-white'}"></i>
-                        <span class="font-extrabold text-[15px] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 whitespace-nowrap">${item.label}</span>
-                    </a>`).join('')}
+        <nav class="flex-1 px-4 space-y-6 overflow-y-auto pt-4 scrollbar-hide group-hover/sidebar:scrollbar-default">
+            ${filtered.map(g => `
+                <div class="space-y-1">
+                    <p class="text-[9px] font-black text-white/20 uppercase px-4 opacity-0 group-hover/sidebar:opacity-100 mb-2 tracking-widest">${g.label}</p>
+                    ${g.items.map(item => `
+                        <a href="${item.href}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activePage === item.page ? 'bg-white text-prime shadow-lg' : 'text-white/60 hover:bg-white/5'}">
+                            <i class="fa-solid ${item.icon} w-6 text-center text-sm"></i>
+                            <span class="text-sm font-bold opacity-0 group-hover/sidebar:opacity-100 transition-opacity whitespace-nowrap">${item.label}</span>
+                        </a>
+                    `).join('')}
                 </div>
             `).join('')}
         </nav>
-        <div class="px-4 py-4 border-t border-white/5">
-            <div onclick="logout()" class="flex items-center gap-4 px-4 py-3 text-white hover:bg-rose-500/20 hover:text-rose-400 rounded-xl transition-all duration-300 group cursor-pointer">
-                <i class="fa-solid fa-arrow-right-from-bracket flex-shrink-0 w-6 text-center text-lg text-white/50 group-hover:text-rose-400"></i>
-                <span class="font-extrabold text-[14px] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 whitespace-nowrap">Logout</span>
+        <style>
+            .scrollbar-hide::-webkit-scrollbar { display: none; }
+            .group-hover\\/sidebar\\:scrollbar-default:hover::-webkit-scrollbar { 
+                display: block; 
+                width: 4px;
+            }
+            .group-hover\\/sidebar\\:scrollbar-default:hover::-webkit-scrollbar-thumb {
+                background: rgba(255,255,255,0.1);
+                border-radius: 10px;
+            }
+        </style>
+        <div class="p-4 border-t border-white/5">
+            <div onclick="logout()" class="flex items-center gap-4 px-4 py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer">
+                <i class="fa-solid fa-power-off w-6 text-center"></i>
+                <span class="text-sm font-bold opacity-0 group-hover/sidebar:opacity-100 transition-opacity">Logout</span>
             </div>
         </div>
     </aside>`;
@@ -123,40 +133,41 @@ function buildSidebar(activePage) {
 
 function buildTopbar(title) {
     const user = getUser();
-
-    // Create the floating search dropdown directly on body (must happen after innerHTML is set)
-    setTimeout(() => {
-        if (!document.getElementById('search-results')) {
-            const box = document.createElement('div');
-            box.id = 'search-results';
-            box.style.cssText = 'position:fixed;background:white;border-radius:16px;box-shadow:0 25px 60px rgba(0,0,0,0.25);border:1px solid #f1f5f9;overflow:hidden;z-index:2147483647;display:none;min-width:320px;';
-            document.body.appendChild(box);
-        }
-    }, 0);
-
+    const isAdmin = (user?.role || 'staff').toLowerCase().trim() === 'admin';
     return `
-    <header class="h-24 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-10 w-full flex-shrink-0">
-        <div class="flex items-center gap-8">
-            <h2 class="text-2xl font-black text-slate-800">${title}</h2>
-            <div class="relative w-80">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                    <i class="fa-solid fa-search text-slate-300"></i>
-                </div>
-                <input type="text" id="global-search-input" onkeyup="handleGlobalSearch(this.value)" class="bg-slate-50 text-slate-600 text-sm rounded-xl block w-full pl-11 p-3.5 outline-none font-bold placeholder:font-medium border border-transparent focus:border-slate-200" placeholder="Search students, teachers...">
+    <header class="h-20 bg-white border-b flex items-center justify-between px-10">
+        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">${title}</h2>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-sm font-black text-slate-800">${user?.name || 'User'}</p>
+                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}">
+                    ${isAdmin ? 'Administrator' : 'Staff / Teacher'}
+                </span>
             </div>
-        </div>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3 cursor-pointer group">
-                <div class="text-right hidden sm:block">
-                    <p class="text-sm font-bold text-slate-700 leading-tight">${user?.name || 'Admin'}</p>
-                    <p class="text-[11px] text-slate-400 font-medium">Administrator</p>
-                </div>
-                <div class="w-12 h-12 rounded-2xl bg-prime overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center text-white font-black text-lg">
-                    ${(user?.name || 'A').charAt(0).toUpperCase()}
-                </div>
+            <div class="w-10 h-10 rounded-xl bg-prime text-white flex items-center justify-center font-black">
+                ${(user?.name || 'U').charAt(0)}
             </div>
         </div>
     </header>`;
+}
+
+function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `fixed top-6 right-6 px-6 py-3 rounded-2xl font-black text-xs text-white shadow-2xl z-[9999] transition-all transform translate-x-20 opacity-0 ${type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`;
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.classList.remove('translate-x-20', 'opacity-0'); }, 10);
+    setTimeout(() => { t.classList.add('translate-x-20', 'opacity-0'); setTimeout(() => t.remove(), 500); }, 3000);
+}
+
+function formatNum(n) { return new Intl.NumberFormat().format(Number(n) || 0); }
+function formatCurrency(n) { return 'Rs. ' + formatNum(n); }
+function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+
+function logout() {
+    sessionStorage.clear();
+    window.location.href = 'gateway.html';
 }
 
 let searchTimeout;
@@ -187,8 +198,8 @@ async function handleGlobalSearch(q) {
                 <div onclick="window.location.href='${r.type === 'student' ? 'students.html' : 'teachers.html'}'"
                      style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.15s;"
                      onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
-                    <div style="width:36px;height:36px;border-radius:10px;background:rgba(30,41,59,0.08);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#1e293b;flex-shrink:0;">
-                        ${r.name.charAt(0)}
+                    <div style="width:36px;height:36px;border-radius:10px;background:rgba(30,41,59,0.08);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#1e293b;flex-shrink:0;overflow:hidden;">
+                        ${r.picture ? `<img src="http://app.sms/pictures/${r.picture.replace('pictures/', '')}" style="width:100%;height:100%;object-fit:cover;">` : r.name.charAt(0)}
                     </div>
                     <div style="flex:1;min-width:0;">
                         <p style="font-size:13px;font-weight:700;color:#334155;margin:0;">${r.name}</p>

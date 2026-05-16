@@ -35,57 +35,6 @@ ipcMain.handle('delete-document', (e, id) => {
     }
     return run('DELETE FROM student_documents WHERE id=?', [id]);
 });
-// ========================= STUDENT BIODATA =========================
-ipcMain.handle('get-student-biodata', (e, studentId) => {
-    try {
-        const id = parseInt(studentId) || 0;
-        if (!id) return { error: 'Invalid student ID' };
-
-        const student = queryOne('SELECT s.*, c.name as class_name FROM students s LEFT JOIN class_infos c ON s.class_id = c.id WHERE s.id = ?', [id]);
-        if (!student) return { error: 'Student not found' };
-
-        // Siblings (same family_no)
-        let siblings = [];
-        try {
-            if (student.family_no) {
-                siblings = queryAll('SELECT s.id, s.name, c.name as class_name FROM students s LEFT JOIN class_infos c ON s.class_id = c.id WHERE s.family_no = ? AND s.id != ?', [student.family_no, id]);
-            }
-        } catch(e) { siblings = []; }
-
-        // Attendance
-        let attTotal = 0, attPresent = 0, attPct = 0;
-        try {
-            attTotal = queryOne('SELECT COUNT(*) as c FROM attendances WHERE student_id = ?', [id])?.c || 0;
-            attPresent = queryOne("SELECT COUNT(*) as c FROM attendances WHERE student_id = ? AND status = 'present'", [id])?.c || 0;
-            attPct = attTotal > 0 ? Math.round(attPresent * 100 / attTotal) : 0;
-        } catch(e) {}
-
-        // Finance ledger
-        let ledger = [], totalDebit = 0, totalCredit = 0, balance = 0;
-        try {
-            ledger = queryAll('SELECT * FROM fees WHERE student_id = ? ORDER BY created_at DESC LIMIT 20', [id]);
-            totalDebit = Number(queryOne('SELECT SUM(debit) as s FROM fees WHERE student_id = ?', [id])?.s) || 0;
-            totalCredit = Number(queryOne('SELECT SUM(credit) as s FROM fees WHERE student_id = ?', [id])?.s) || 0;
-            balance = totalDebit - totalCredit;
-        } catch(e) {}
-
-        // Exam results
-        let examResults = [];
-        try {
-            examResults = queryAll('SELECT r.*, e.name as exam_name FROM exam_results r JOIN exams e ON r.exam_id = e.id WHERE r.student_id = ? ORDER BY e.created_at DESC', [id]);
-            examResults.forEach(r => {
-                const t = Number(r.total_marks) || 0;
-                const o = Number(r.obtained_marks) || 0;
-                r.percentage = t > 0 ? Math.round(o * 100 / t) : 0;
-            });
-        } catch(e) {}
-
-        return { student, siblings, attTotal, attPresent, attPct, ledger, totalDebit, totalCredit, balance, examResults };
-    } catch(err) {
-        return { error: err.message };
-    }
-});
-
 ipcMain.handle('open-doc-now', (e, fileName) => {
     const filePath = require('path').join(app.getPath('userData'), 'student_documents', fileName);
     if (fs.existsSync(filePath)) {
@@ -575,40 +524,40 @@ ipcMain.handle('get-students', () => queryAll('SELECT s.*, c.name as class_name 
 ipcMain.handle('get-student', (e, id) => queryOne('SELECT s.*, c.name as class_name FROM students s LEFT JOIN class_infos c ON s.class_id = c.id WHERE s.id = ?', [id]));
 ipcMain.handle('create-student', (e, d) => {
     try {
+        db.run('BEGIN TRANSACTION');
         const uuid = Date.now().toString(36) + Math.random().toString(36).substr(2);
         const rollNo = String(d.roll_no).trim();
 
-        // Check for existing roll number
+        // Check for existing roll number before insert
         const existing = queryOne('SELECT id FROM students WHERE roll_no = ?', [rollNo]);
         if (existing) throw new Error(`Roll Number ${rollNo} already exists!`);
 
-        // Use the 'run' helper for persistence
-        const sRes = run('INSERT INTO students (uuid, name, roll_no, class_id, guardian_name, contact_number, monthly_fee, admission_fee, picture, gender, concession) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        db.run('INSERT INTO students (uuid, name, roll_no, class_id, guardian_name, contact_number, monthly_fee, admission_fee, picture, gender, concession) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
             [uuid, d.name, rollNo, d.class_id, d.guardian_name, d.contact_number, roundMoney(d.monthly_fee || 0), roundMoney(d.admission_fee || 0), d.picture || null, d.gender || 'Male', roundMoney(d.concession || 0)]);
 
-        if (!sRes.success) throw new Error(sRes.error);
-        const studentId = sRes.id;
+        const student = queryOne('SELECT id FROM students WHERE uuid = ?', [uuid]);
+        if (student) {
+            const studentId = student.id;
+            const adm = roundMoney(d.admission_fee || 0);
+            const tut = roundMoney(d.monthly_fee || 0);
+            const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
-        const adm = roundMoney(d.admission_fee || 0);
-        const tut = roundMoney(d.monthly_fee || 0);
-        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-
-        if (adm > 0) {
-            const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))', 
-                [uid, studentId, adm, adm, 0, 'unpaid', 'Admission Fee', 'admission', currentMonth]);
+            if (adm > 0) {
+                const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                db.run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))', [uid, studentId, adm, adm, 0, 'unpaid', 'Admission Fee', 'admission', currentMonth]);
+            }
+            if (tut > 0) {
+                const concession = roundMoney(d.concession || 0);
+                const netTut = roundMoney(Math.max(0, tut - concession));
+                const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                db.run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))', [uid, studentId, netTut, netTut, 0, 'unpaid', `Monthly Tuition Fee${concession > 0 ? ' (After Concession)' : ''}`, 'tuition', currentMonth]);
+            }
         }
-        if (tut > 0) {
-            const concession = roundMoney(d.concession || 0);
-            const netTut = roundMoney(Math.max(0, tut - concession));
-            const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))', 
-                [uid, studentId, netTut, netTut, 0, 'unpaid', `Monthly Tuition Fee${concession > 0 ? ' (After Concession)' : ''}`, 'tuition', currentMonth]);
-        }
-
+        db.run('COMMIT');
         saveDB();
         return { success: true };
     } catch (err) {
+        db.run('ROLLBACK');
         logError('create-student failed', err);
         return { success: false, error: err.message };
     }

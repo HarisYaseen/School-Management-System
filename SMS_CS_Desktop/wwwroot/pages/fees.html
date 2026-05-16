@@ -84,15 +84,6 @@
                         <tbody id="fees-table" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
-                <div class="mt-4 px-8 py-3 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Status</p>
-                    <div class="flex gap-6">
-                        <p class="text-[10px] font-bold text-slate-400">TOTAL FEES: <span id="debug-fees-count" class="text-prime">0</span></p>
-                        <p class="text-[10px] font-bold text-slate-400">SEARCHABLE: <span id="debug-students-count" class="text-prime">0</span></p>
-                        <p class="text-[10px] font-bold text-slate-400">ACTIVE ID: <span id="debug-active-sid" class="text-prime">NONE</span></p>
-                        <p class="text-[10px] font-bold text-slate-400">DB PATH: <span id="debug-db-path" class="text-prime">LOADING...</span></p>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
@@ -187,20 +178,14 @@
 
         async function load() {
             try {
-                // Load individually to prevent one failure from blocking others
-                try { allFees = await window.api.getFees() || []; } catch(e) { console.error("Fees fetch failed", e); allFees = []; }
-                try { allStudents = await window.api.getStudents() || []; } catch(e) { console.error("Students fetch failed", e); allStudents = []; }
-                try { allClasses = await window.api.getClasses() || []; } catch(e) { console.error("Classes fetch failed", e); allClasses = []; }
+                [allFees, allStudents, allClasses] = await Promise.all([
+                    window.api.getFees(), 
+                    window.api.getStudents(),
+                    window.api.getClasses()
+                ]);
 
-                console.log("Fees Load Stats:", { 
-                    feesCount: allFees.length, 
-                    studentsCount: allStudents.length, 
-                    classesCount: allClasses.length 
-                });
-
-                // Ensure we only filter out truly deleted students
-                allStudents = allStudents.filter(s => s && s.status !== 'deleted');
-                console.log("Searchable Students:", allStudents.length);
+                // Audit Fix: Filter out soft-deleted students from UI
+                allStudents = allStudents.filter(s => s.status !== 'deleted');
 
                 const fClassSelect = document.getElementById('f-class-id');
                 if (fClassSelect) {
@@ -209,22 +194,11 @@
                 
                 window.onclick = (e) => { 
                     if (!e.target.closest('.relative')) {
-                        const modalRes = document.getElementById('modal-student-results');
-                        if (modalRes) modalRes.classList.add('hidden');
+                        document.getElementById('modal-student-results').classList.add('hidden');
                         const mainResults = document.getElementById('main-student-results');
                         if (mainResults) mainResults.classList.add('hidden');
                     }
                 };
-
-                document.getElementById('debug-fees-count').textContent = allFees.length;
-                document.getElementById('debug-students-count').textContent = allStudents.length;
-                
-                try {
-                    const path = await window.api.getDbPath();
-                    document.getElementById('debug-db-path').textContent = path || 'NOT FOUND';
-                } catch(e) {
-                    document.getElementById('debug-db-path').textContent = 'ERROR';
-                }
 
                 const params = new URLSearchParams(window.location.search);
                 const sid = params.get('student');
@@ -234,7 +208,7 @@
                 } else {
                     renderFees();
                 }
-            } catch (err) { console.error('Overall Load error:', err); }
+            } catch (err) { console.error('Load error:', err); }
         }
 
         let selectedStudentId = null;
@@ -244,19 +218,12 @@
             const results = document.getElementById('main-student-results');
             if (!query) { results.classList.add('hidden'); selectedStudentId = null; renderFees(); return; }
 
-            const filtered = allStudents.filter(s => {
-                const name = (s.name || "").toLowerCase();
-                const roll = (s.roll_no || "").toLowerCase();
-                const sid = String(s.id || "");
-                return name.includes(query) || roll.includes(query) || sid === query;
-            });
+            const filtered = allStudents.filter(s => s.name.toLowerCase().includes(query) || s.roll_no.toLowerCase().includes(query) || String(s.id) === query);
+            
             if (filtered.length) {
                 const htmlRows = await Promise.all(filtered.slice(0, 20).map(async s => {
                     let picUrl = '';
-                    if (s.picture) {
-                        const res = await window.api.getStudentPictureUrl(s.picture);
-                        if (res && res.success) picUrl = res.url;
-                    }
+                    if (s.picture) picUrl = await window.api.getStudentPictureUrl(s.picture);
                     
                     return `
                     <div onclick="selectStudentMain('${s.id}', '${s.name}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-0 flex items-center justify-between ${s.status === 'inactive' ? 'opacity-50' : ''}">
@@ -285,7 +252,6 @@
 
         function selectStudentMain(id, name) {
             selectedStudentId = id;
-            document.getElementById('debug-active-sid').textContent = id;
             document.getElementById('student-search').value = name;
             document.getElementById('main-student-results').classList.add('hidden');
             renderFees();
@@ -296,20 +262,12 @@
             const results = document.getElementById('modal-student-results');
             if (!query) { results.classList.add('hidden'); return; }
 
-            const filtered = allStudents.filter(s => {
-                const name = (s.name || "").toLowerCase();
-                const roll = (s.roll_no || "").toLowerCase();
-                const sid = String(s.id || "");
-                return name.includes(query) || roll.includes(query) || sid === query;
-            });
+            const filtered = allStudents.filter(s => s.name.toLowerCase().includes(query) || s.roll_no.toLowerCase().includes(query) || String(s.id) === query);
             
             if (filtered.length) {
                 const htmlRows = await Promise.all(filtered.slice(0, 10).map(async s => {
                     let picUrl = '';
-                    if (s.picture) {
-                        const res = await window.api.getStudentPictureUrl(s.picture);
-                        if (res && res.success) picUrl = res.url;
-                    }
+                    if (s.picture) picUrl = await window.api.getStudentPictureUrl(s.picture);
 
                     return `
                     <div onclick="selectStudentModal('${s.id}', '${s.name}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-0 flex items-center gap-3 ${s.status === 'inactive' ? 'opacity-50' : ''}">
@@ -417,21 +375,15 @@
                 const picContainer = document.getElementById('ledger-student-pic');
                 picContainer.classList.remove('hidden');
                 if (student.picture) {
-                    window.api.getStudentPictureUrl(student.picture).then(res => {
-                        if (res && res.success) {
-                            picContainer.innerHTML = `<img src="${res.url}" class="w-full h-full object-cover">`;
-                        } else {
-                            picContainer.innerHTML = `<span class="text-prime font-black text-sm">${student.name.charAt(0)}</span>`;
-                        }
+                    window.api.getStudentPictureUrl(student.picture).then(url => {
+                        picContainer.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
                     });
                 } else {
                     picContainer.innerHTML = `<span class="text-prime font-black text-sm">${student.name.charAt(0)}</span>`;
                 }
             }
 
-            // Hardened filter for numeric IDs
-            let filtered = allFees.filter(f => Number(f.student_id) === Number(sid));
-            console.log(`Rendering Ledger for SID ${sid}: Found ${filtered.length} records out of ${allFees.length} total.`);
+            let filtered = allFees.filter(f => String(f.student_id) === sid);
             filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
             let runningBalance = 0, totalDebit = 0, totalCredit = 0;
@@ -535,7 +487,7 @@
                     
                     const data = { 
                         id: fid || null,
-                        student_id: parseInt(sid), 
+                        student_id: sid, 
                         amount: amount, 
                         debit: entryType === 'charge' ? amount : 0,
                         credit: entryType === 'payment' ? amount : 0,
@@ -659,9 +611,6 @@
                     ${copyName ? `<div style="position: absolute; top: 20px; right: 25px; font-size: 10px; font-weight: 900; color: #94a3b8; border: 1.5px solid #e2e8f0; padding: 3px 10px; border-radius: 6px; text-transform: uppercase;">${copyName}</div>` : ''}
                     <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
                         <h2 style="margin: 0; font-size: 24px; font-weight: 900; color: #1e293b; text-transform: uppercase;">${settings.school_name || 'SMS CONNECT'}</h2>
-                        <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-top: 2px;">
-                            ${settings.school_address || ''} ${settings.school_contact ? ' | ' + settings.school_contact : ''}
-                        </div>
                         <div style="background: #1e293b; color: white; font-size: 12px; font-weight: 900; padding: 5px 0; margin-top: 8px; text-transform: uppercase; letter-spacing: 4px; border-radius: 8px;">FEE CHALLAN - ${month}</div>
                     </div>
                     <div style="display: flex; justify-content: space-between; gap: 20px; font-size: 14px;">
@@ -691,48 +640,20 @@
         }
 
         async function printChallan() {
-            if (!selectedStudentId) return showToast('No student selected', 'error');
-            try {
-                // Use already-loaded student data — no extra API call needed
-                const student = allStudents.find(s => String(s.id) === String(selectedStudentId));
-                if (!student) return showToast('Student not found', 'error');
-
-                const settingsArr = await window.api.getSettings();
-
-                // Normalize settings — could be [{key,value}] array or plain object
-                const settings = {};
-                if (Array.isArray(settingsArr)) {
-                    settingsArr.forEach(s => { settings[s.key] = s.value; });
-                } else if (settingsArr && typeof settingsArr === 'object') {
-                    Object.assign(settings, settingsArr);
-                }
-
-                const ledger = allFees.filter(f => String(f.student_id) === String(selectedStudentId));
-                const challanHTML = generateChallanHTML(student, settings, ledger);
-
-                // Hidden iframe for printing (works in Electron)
-                let iframe = document.getElementById('print-iframe');
-                if (!iframe) {
-                    iframe = document.createElement('iframe');
-                    iframe.id = 'print-iframe';
-                    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;';
-                    document.body.appendChild(iframe);
-                }
-                const doc = iframe.contentDocument || iframe.contentWindow.document;
-                doc.open();
-                doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-                    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
-                    <style>*{box-sizing:border-box}body{margin:0;padding:20px;background:white;font-family:'Outfit',sans-serif}@media print{body{padding:0}@page{margin:10mm}}</style>
-                    </head><body>${challanHTML}</body></html>`);
-                doc.close();
-                setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 600);
-
-            } catch(err) {
-                console.error('printChallan error:', err);
-                showToast('Print failed: ' + err.message, 'error');
-            }
+            if (!selectedStudentId) return;
+            const [settings, student] = await Promise.all([window.api.getSettings(), window.api.getStudent(selectedStudentId)]);
+            const ledger = await window.api.getFees();
+            const studentLedger = ledger.filter(f => String(f.student_id) === String(selectedStudentId));
+            
+            const challanHTML = generateChallanHTML(student, settings, studentLedger);
+            
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Print</title>
+                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>body { margin: 0; padding: 20px; background: #f8fafc; } @media print { body { background: white; padding: 0; } }</style></head>
+                <body>${challanHTML}<script>setTimeout(()=> { window.print(); window.close(); }, 500);<\/script></body></html>`);
+            win.document.close();
         }
-
 
         async function openBulkModal() {
             const cls = await window.api.getClasses();
@@ -755,21 +676,8 @@
                 btn.disabled = true;
                 btn.textContent = 'Generating...';
 
-                const [settingsArr, allStudentsFetched, allFeesFetched] = await Promise.all([
-                    window.api.getSettings(),
-                    window.api.getStudents(),
-                    window.api.getFees()
-                ]);
-
-                // Normalize settings
-                const settings = {};
-                if (Array.isArray(settingsArr)) {
-                    settingsArr.forEach(s => { settings[s.key] = s.value; });
-                } else if (settingsArr && typeof settingsArr === 'object') {
-                    Object.assign(settings, settingsArr);
-                }
-
-                const targetStudents = allStudentsFetched.filter(s => String(s.class_id) === String(classId) && s.status === 'active');
+                const [settings, allStudents, allFees] = await Promise.all([window.api.getSettings(), window.api.getStudents(), window.api.getFees()]);
+                const targetStudents = allStudents.filter(s => s.class_id == classId && s.status === 'active');
                 
                 if (targetStudents.length === 0) {
                     showToast('No active students found in this class.', 'error');
@@ -778,38 +686,20 @@
 
                 let finalHTML = '';
                 for (const student of targetStudents) {
-                    const studentLedger = allFeesFetched.filter(fee => String(fee.student_id) === String(student.id));
+                    const studentLedger = allFees.filter(fee => String(fee.student_id) === String(student.id));
                     const h1 = generateChallanHTML(student, settings, studentLedger);
                     finalHTML += `<div style="page-break-after: always; padding: 10mm;">${h1}</div>`;
                 }
-
-                // Use hidden iframe for printing
-                let iframe = document.getElementById('print-iframe');
-                if (!iframe) {
-                    iframe = document.createElement('iframe');
-                    iframe.id = 'print-iframe';
-                    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;';
-                    document.body.appendChild(iframe);
-                }
-
-                const doc = iframe.contentDocument || iframe.contentWindow.document;
-                doc.open();
-                doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+                const win = window.open('', '_blank');
+                win.document.write(`<html><head><title>Bulk Print</title>
                     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
                     <style>
-                        * { box-sizing: border-box; }
-                        body { margin: 0; padding: 20px; background: white; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; align-items: center; gap: 40px; }
-                        @media print { body { background: white; padding: 0; } @page { margin: 10mm; } }
-                    </style>
-                </head><body>${finalHTML}</body></html>`);
-                doc.close();
-
-                setTimeout(() => {
-                    iframe.contentWindow.focus();
-                    iframe.contentWindow.print();
-                    document.getElementById('bulk-modal').classList.add('hidden');
-                }, 1000);
-
+                        body { margin: 0; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+                        @media print { body { background: white; padding: 0; } }
+                    </style></head>
+                    <body>${finalHTML}<script>setTimeout(()=> { window.print(); window.close(); }, 1500);<\/script></body></html>`);
+                win.document.close();
+                document.getElementById('bulk-modal').classList.add('hidden');
             } catch (err) {
                 console.error('Bulk print error:', err);
                 showToast('Failed to generate challans.', 'error');

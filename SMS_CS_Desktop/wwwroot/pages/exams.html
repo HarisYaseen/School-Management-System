@@ -406,9 +406,9 @@
             
             let pictureHtml = '';
             if (dmc.student.picture) {
-                const res = await window.api.getStudentPictureUrl(dmc.student.picture);
-                if (res && res.success) {
-                    pictureHtml = `<div style="text-align: right; margin-left: 20px;"><img src="${res.url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px; border: 3px solid #1e293b;"></div>`;
+                const picUrl = await window.api.getStudentPictureUrl(dmc.student.picture);
+                if (picUrl) {
+                    pictureHtml = `<div style="text-align: right; margin-left: 20px;"><img src="${picUrl}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 10px; border: 3px solid #1e293b;"></div>`;
                 }
             }
 
@@ -456,10 +456,7 @@
                     <div class="dmc-card">
                         <div class="header">
                             <h1 style="margin: 0; font-size: 32px; font-weight: 900; text-transform: uppercase;">${settings.school_name || 'SMS CONNECT'}</h1>
-                            <p style="margin: 5px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px;">
-                                ${settings.school_address || ''} ${settings.school_contact ? ' | ' + settings.school_contact : ''}
-                            </p>
-                            <p style="margin: 10px 0 0 0; font-weight: 900; color: #1e293b; text-transform: uppercase; font-size: 14px;">DETAILED MARKS CERTIFICATE (DMC)</p>
+                            <p style="margin: 5px 0 0 0; font-weight: 700; color: #64748b;">DETAILED MARKS CERTIFICATE (DMC)</p>
                             <div style="background: #1e293b; color: white; display: inline-block; padding: 5px 20px; border-radius: 5px; margin-top: 15px; font-weight: 900; font-size: 12px; text-transform: uppercase;">${dmc.exam.name}</div>
                         </div>
 

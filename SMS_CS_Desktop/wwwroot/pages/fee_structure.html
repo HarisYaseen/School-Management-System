@@ -123,9 +123,9 @@
 
                 let avatar = `<div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 text-sm shrink-0">${s.name.charAt(0)}</div>`;
                 if (s.picture) {
-                    const res = await window.api.getStudentPictureUrl(s.picture);
-                    if (res && res.success) {
-                        avatar = `<img src="${res.url}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0">`;
+                    const url = await window.api.getStudentPictureUrl(s.picture);
+                    if (url) {
+                        avatar = `<img src="${url}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0">`;
                     }
                 }
 

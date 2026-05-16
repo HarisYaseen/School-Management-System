@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-[1600px] mx-auto">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800">Inventory Hub</h3>
+                        <p class="text-sm text-slate-400 mt-1" id="stock-summary">Loading...</p>
+                    </div>
+                    <button onclick="openAddModal()" class="bg-prime text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-700 transition-all shadow-lg shadow-prime/20">
+                        <i class="fa-solid fa-plus"></i> Add Item
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="inv-stats-container">
+                    <div class="bg-white p-6 rounded-[2rem] border-2 border-prime/10 shadow-sm group relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-4 -top-4 text-5xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                        <div class="flex items-center gap-4 relative z-10">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-vault"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Current Stock Value</p>
+                                <p class="text-xl font-black text-slate-800" id="stat-investment">Rs. 0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-[2rem] border-2 border-prime/10 shadow-sm group relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-4 -top-4 text-5xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                        <div class="flex items-center gap-4 relative z-10">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Sales</p>
+                                <p class="text-xl font-black text-slate-800" id="stat-sales">Rs. 0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-[2rem] border-2 border-prime/10 shadow-sm group relative overflow-hidden">
+                        <i class="fa-solid fa-graduation-cap absolute -right-4 -top-4 text-5xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                        <div class="flex items-center gap-4 relative z-10">
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Estimated Profit</p>
+                                <p class="text-xl font-black text-slate-800" id="stat-profit">Rs. 0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border-2 border-prime/10 overflow-hidden relative">
+                    <i class="fa-solid fa-graduation-cap absolute -right-12 -top-12 text-[12rem] text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">#</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Item Name</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">In Stock</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Purchase Price</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Sale Price</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Stock Value</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Status</th>
+                                <th class="text-left px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="inv-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800" id="inv-modal-title">Add Item</h3>
+                <button onclick="document.getElementById('inv-modal').classList.add('hidden')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form onsubmit="saveItem(event)" class="space-y-4">
+                <input type="hidden" id="inv-id">
+                <div>
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Item Name *</label>
+                    <input type="text" id="inv-name" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium" required>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Qty *</label>
+                        <input type="number" id="inv-qty" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium" required min="0">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Purchase Price</label>
+                        <input type="number" id="inv-purchase" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">Sale Price</label>
+                        <input type="number" id="inv-sale" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-medium" placeholder="0">
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-prime text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all">Save Item</button>
+                    <button type="button" onclick="document.getElementById('inv-modal').classList.add('hidden')" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stock In Modal -->
+    <div id="stock-in-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800">Add New Stock</h3>
+                <button onclick="closeStockIn()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form onsubmit="saveStockIn(event)" class="space-y-4">
+                <input type="hidden" id="si-id">
+                <div class="p-4 bg-blue-50 rounded-2xl mb-4">
+                    <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Current Stock for</p>
+                    <p class="text-lg font-black text-blue-600" id="si-item-name">—</p>
+                    <p class="text-xs font-bold text-blue-400 mt-1">Available: <span id="si-current-qty">0</span> Units</p>
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-1 block">New Quantity Received *</label>
+                    <input type="number" id="si-add-qty" class="premium-input bg-slate-50 w-full px-4 py-3 rounded-xl text-sm font-bold" required min="1" placeholder="Enter quantity to add...">
+                    <p class="text-[9px] font-bold text-slate-400 mt-2 italic">* This will be added to your current stock level automatically.</p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-prime text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all">Update Stock</button>
+                    <button type="button" onclick="closeStockIn()" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('inventory');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Inventory Hub');
+
+        let allItems = [];
+        let editingId = null;
+
+        async function load() {
+            const [items, stats] = await Promise.all([
+                window.api.getInventory(),
+                window.api.getInventoryStats()
+            ]);
+            allItems = items;
+
+            document.getElementById('stat-investment').textContent = `Rs. ${formatNum(stats.investment)}`;
+            document.getElementById('stat-sales').textContent = `Rs. ${formatNum(stats.sales)}`;
+            document.getElementById('stat-profit').textContent = `Rs. ${formatNum(stats.profit)}`;
+
+            const lowStock = allItems.filter(i => i.qty < 10).length;
+            document.getElementById('stock-summary').textContent = `${allItems.length} items total · ${lowStock} low stock alerts`;
+            const tbody = document.getElementById('inventory-table');
+            tbody.innerHTML = allItems.length ? allItems.map((item, i) => `
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-6 py-4 text-sm font-bold text-slate-400">${i + 1}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500"><i class="fa-solid fa-box text-sm"></i></div>
+                            <span class="font-bold text-slate-700">${item.item_name}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-black ${item.qty < 10 ? 'text-rose-500' : 'text-slate-700'}">${item.qty}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-600">Rs. ${formatNum(item.purchase_price)}</td>
+                    <td class="px-6 py-4 text-sm font-black text-slate-800">Rs. ${formatNum(item.sale_price)}</td>
+                    <td class="px-6 py-4 text-sm font-black text-emerald-600">Rs. ${formatNum(item.qty * item.purchase_price)}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase ${item.qty < 10 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}">${item.qty < 10 ? 'Low Stock' : 'In Stock'}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button onclick="openStockIn(${item.id}, '${item.item_name}', ${item.qty})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-400 hover:bg-blue-100 transition-all flex items-center justify-center" title="Stock In">
+                                <i class="fa-solid fa-truck-ramp-box text-xs"></i>
+                            </button>
+                            <button onclick="editItem(${item.id})" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 text-slate-400 transition-all flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteItem(${item.id},'${item.item_name}')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-600 text-slate-400 transition-all flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>`).join('')
+                : '<tr><td colspan="7" class="text-center py-16 text-slate-300 font-bold">No inventory items. Add your first item!</td></tr>';
+        }
+
+        function openAddModal() {
+            editingId = null;
+            document.getElementById('inv-modal-title').textContent = 'Add Item';
+            ['inv-id','inv-name','inv-qty','inv-purchase','inv-sale'].forEach(f => document.getElementById(f).value = '');
+            document.getElementById('inv-modal').classList.remove('hidden');
+        }
+
+        function editItem(id) {
+            const item = allItems.find(x => x.id === id);
+            if (!item) return;
+            editingId = id;
+            document.getElementById('inv-modal-title').textContent = 'Edit Item';
+            document.getElementById('inv-id').value = item.id;
+            document.getElementById('inv-name').value = item.item_name;
+            document.getElementById('inv-qty').value = item.qty;
+            document.getElementById('inv-purchase').value = item.purchase_price;
+            document.getElementById('inv-sale').value = item.sale_price;
+            document.getElementById('inv-modal').classList.remove('hidden');
+        }
+
+        async function saveItem(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const data = { id: document.getElementById('inv-id').value, item_name: document.getElementById('inv-name').value, qty: document.getElementById('inv-qty').value, purchase_price: document.getElementById('inv-purchase').value, sale_price: document.getElementById('inv-sale').value };
+            try {
+                const result = editingId ? await window.api.updateInventory(data) : await window.api.createInventory(data);
+                if (result.success) { document.getElementById('inv-modal').classList.add('hidden'); showToast(editingId ? 'Item updated!' : 'Item added!'); load(); }
+                else showToast('Failed: ' + (result.error || 'Check console'), 'error');
+            } catch (err) {
+                showToast('System error occurred.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldText;
+            }
+        }
+
+        async function deleteItem(id, name) {
+            if (!confirm(`Delete "${name}" from inventory?`)) return;
+            const result = await window.api.deleteInventory(id);
+            if (result.success) { showToast('Item deleted.'); load(); }
+            else showToast('Failed.', 'error');
+        }
+
+        function closeStockIn() {
+            document.getElementById('stock-in-modal').classList.add('hidden');
+            document.getElementById('si-add-qty').value = '';
+        }
+
+        function openStockIn(id, name, qty) {
+            document.getElementById('si-id').value = id;
+            document.getElementById('si-item-name').textContent = name;
+            document.getElementById('si-current-qty').textContent = qty;
+            document.getElementById('stock-in-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('si-add-qty').focus(), 100);
+        }
+
+        async function saveStockIn(e) {
+            e.preventDefault();
+            const id = document.getElementById('si-id').value;
+            const addQty = parseInt(document.getElementById('si-add-qty').value);
+            if (!addQty || addQty < 1) return;
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            try {
+                const result = await window.api.stockIn({ id, addQty });
+                if (result.success) {
+                    showToast(`Stock updated! Added ${addQty} units.`);
+                    closeStockIn();
+                    load();
+                } else {
+                    showToast(result.error || 'Failed to update stock', 'error');
+                }
+            } catch (err) {
+                showToast('System error occurred.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldText;
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

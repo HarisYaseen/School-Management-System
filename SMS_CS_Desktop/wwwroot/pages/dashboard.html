@@ -12,8 +12,8 @@
 <body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
     <div id="sidebar-container"></div>
     <main class="flex-1 flex flex-col h-screen overflow-hidden">
-        <div id="topbar-container" class="flex-shrink-0"></div>
-        <div class="flex-1 overflow-y-auto bg-[#F8FAFC] p-10">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
             <div class="max-w-[1600px] mx-auto space-y-10">
                 <!-- Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" id="stats-grid"></div>
@@ -98,29 +98,9 @@
     <script src="layout.js"></script>
     <script>
         requireAuth();
-        const user = getUser();
         document.getElementById('sidebar-container').innerHTML = buildSidebar('dashboard');
-        const isFinance = user?.role === 'admin' || user?.permissions?.includes('finance');
-        
-        // Hide Financial Stats
-        if (!isFinance) {
-            // Hide Earnings Card
-            const earningsCard = document.querySelector('[data-key="total_collection"]')?.parentElement;
-            if (earningsCard) earningsCard.style.display = 'none';
-
-            // Hide Revenue Graph Box
-            const graphBox = document.getElementById('revenue-chart')?.closest('.bg-white');
-            if (graphBox) graphBox.style.display = 'none';
-
-            // Hide Outstanding/Collection Widget
-            const outstandingWidget = document.getElementById('pending-fees-val')?.closest('.bg-prime');
-            if (outstandingWidget) outstandingWidget.style.display = 'none';
-
-            // Hide Fee & POS Quick Actions
-            document.querySelectorAll('a[href="fees.html"], a[href="pos.html"]').forEach(el => {
-                if (el.closest('.space-y-3')) el.style.display = 'none';
-            });
-        }
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Dashboard');
+        document.getElementById('current-year').textContent = new Date().getFullYear();
 
         const statCards = [
             { key: 'total_students', label: 'Students', icon: 'fa-graduation-cap', color: 'blue' },
@@ -130,77 +110,81 @@
         ];
 
         async function load() {
-            const user = getUser();
-            const role = (user?.role || '').toLowerCase();
-            const rawPerms = user?.permissions;
-            let perms = [];
-            try { perms = typeof rawPerms === 'string' ? JSON.parse(rawPerms) : (rawPerms || []); } catch (e) {}
-            perms = perms.map(p => p.toLowerCase());
-            const hasFinance = role === 'admin' || perms.includes('finance') || perms.includes('reports');
-
             const [stats, revenue, admissions] = await Promise.all([
                 window.api.getDashboardStats(),
                 window.api.getMonthlyRevenue(),
                 window.api.getRecentAdmissions(),
             ]);
 
-            // Stats Filtering
+            // Stats
             document.getElementById('stats-grid').innerHTML = statCards.map(c => {
-                if (c.key === 'total_collection' && !hasFinance) return '';
-                const val = stats[c.key] || 0;
-                let sub = '';
-                if (c.key === 'total_collection' && hasFinance) {
+                const val = stats[c.key];
+                let profitHtml = '';
+                
+                // Add net profit sub-label for the collection card
+                if (c.key === 'total_collection') {
                     const profit = stats.net_profit || 0;
                     const color = profit >= 0 ? 'text-emerald-500' : 'text-rose-500';
-                    sub = `<p class="text-[10px] font-black ${color} mt-1 uppercase tracking-tighter">Profit: ${formatCurrency(profit)}</p>`;
+                    profitHtml = `<p class="text-[10px] font-black ${color} mt-1 uppercase tracking-tighter">Profit: ${formatCurrency(profit)}</p>`;
                 }
+
                 return `
                 <div class="bg-white p-8 rounded-[2rem] shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-prime/10 group flex items-center gap-6 relative overflow-hidden">
+                    <i class="fa-solid fa-graduation-cap absolute -right-6 -top-6 text-7xl text-slate-400/20 -rotate-12 group-hover:scale-110 group-hover:text-prime/10 transition-transform duration-700"></i>
                     <div class="w-16 h-16 rounded-2xl bg-${c.color}-50 flex items-center justify-center text-${c.color}-500 group-hover:bg-${c.color}-500 group-hover:text-white transition-all duration-500 relative z-10">
                         <i class="fa-solid ${c.icon} text-2xl"></i>
                     </div>
                     <div class="relative z-10">
                         <p class="text-slate-400 font-bold text-sm uppercase tracking-wider">${c.label}</p>
                         <p class="text-3xl font-black text-slate-800">${c.isCurrency ? formatCurrency(val) : formatNum(val)}</p>
-                        ${sub}
+                        ${profitHtml}
                     </div>
-                </div>`;
-            }).join('');
+                </div>
+            `}).join('');
 
-            // Financial Summary Hiding
-            if (!hasFinance) {
-                document.getElementById('efficiency-card')?.classList.add('hidden');
-                document.getElementById('revenue-chart-card')?.classList.add('hidden');
-            } else {
-                // Efficiency bar
-                const total = (stats.total_collection || 0) + (stats.pending_fees || 0);
-                const eff = total > 0 ? Math.round((stats.total_collection / total) * 100) : 0;
-                document.getElementById('pending-fees-val').textContent = formatCurrency(stats.pending_fees);
-                document.getElementById('efficiency-pct').textContent = eff + '%';
-                document.getElementById('efficiency-bar').style.width = eff + '%';
+            // Pending fees
+            document.getElementById('pending-fees-val').textContent = formatCurrency(stats.pending_fees);
+            const total = stats.total_collection + stats.pending_fees;
+            const eff = total > 0 ? Math.round((stats.total_collection / total) * 100) : 0;
+            document.getElementById('efficiency-pct').textContent = eff + '%';
+            document.getElementById('efficiency-bar').style.width = eff + '%';
 
-                // Chart
-                const maxVal = Math.max(...Object.values(revenue), 1000);
-                const curMonth = new Date().toLocaleString('en', { month: 'short' });
-                document.getElementById('revenue-chart').innerHTML = Object.entries(revenue).map(([m, amt]) => `
-                    <div class="flex-1 flex flex-col items-center gap-4 group relative h-full justify-end">
-                        <div class="w-full flex items-end justify-center h-full max-h-[256px]">
-                            <div class="w-3 ${m === curMonth ? 'bg-rose-400' : 'bg-prime'} rounded-t-lg transition-all duration-500" style="height:${(amt / maxVal) * 100}%"></div>
-                        </div>
-                        <span class="text-[11px] font-bold ${m === curMonth ? 'text-prime font-black' : 'text-slate-300'}">${m}</span>
-                    </div>`).join('');
-            }
+            // Revenue Chart
+            const maxVal = Math.max(...Object.values(revenue), 1000);
+            const curMonth = new Date().toLocaleString('en', { month: 'short' });
+            document.getElementById('revenue-chart').innerHTML = Object.entries(revenue).map(([m, amt]) => `
+                <div class="flex-1 flex flex-col items-center gap-4 group relative h-full justify-end">
+                    <div class="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] p-2 rounded-lg font-black whitespace-nowrap z-10 pointer-events-none">
+                        ${formatCurrency(amt)}
+                    </div>
+                    <div class="w-full flex items-end justify-center h-full max-h-[256px]">
+                        <div class="w-3 ${m === curMonth ? 'bg-rose-400' : 'bg-prime'} rounded-t-lg transition-all duration-500 group-hover:bg-indigo-500" style="height:${(amt / maxVal) * 100}%"></div>
+                    </div>
+                    <span class="text-[11px] font-bold ${m === curMonth ? 'text-prime font-black' : 'text-slate-300'}">${m}</span>
+                </div>
+            `).join('');
 
-            // Recent Admissions (Visible to all)
+            // Recent Admissions
             const admEl = document.getElementById('recent-admissions');
-            admEl.innerHTML = admissions.map(s => `
-                <div class="flex items-center gap-4 group cursor-pointer" onclick="window.location.href='biodata.html?id=${s.id}'">
-                    <div class="w-12 h-12 rounded-2xl bg-prime/5 flex items-center justify-center text-prime font-black">${s.name.charAt(0)}</div>
-                    <div class="flex-1">
-                        <p class="text-sm font-black text-slate-700">${s.name}</p>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${s.class_name || 'General'}</p>
-                    </div>
-                </div>`).join('') || '<p class="text-center py-4 text-slate-300">No recent students.</p>';
+            const admRows = await Promise.all(admissions.map(async s => {
+                let picUrl = '';
+                if (s.picture) {
+                    const url = await window.api.getStudentPictureUrl(s.picture);
+                    if (url) picUrl = url;
+                }
+                return `
+                    <div class="flex items-center gap-4 group cursor-pointer" onclick="window.location.href='biodata.html?id=${s.id}'">
+                        <div class="w-12 h-12 rounded-2xl bg-prime/5 flex items-center justify-center text-prime font-black transition-all group-hover:bg-prime group-hover:text-white overflow-hidden">
+                            ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover">` : s.name.charAt(0)}
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-black text-slate-700">${s.name}</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${s.class_name || 'Unassigned'}</p>
+                        </div>
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase">Active</span>
+                    </div>`;
+            }));
+            admEl.innerHTML = admRows.length ? admRows.join('') : '<p class="text-center text-slate-300 font-bold py-8">No admissions yet.</p>';
         }
 
         load();

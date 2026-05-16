@@ -29,3 +29,15 @@ Thumbs.db
 *.asar
 /SMS_Connect_Installer*
 /scratch/
+/build/
+/ffmpeg_temp/
+/frames/
+/src/pictures/
+
+# C# / .NET
+[Bb]in/
+[Oo]bj/
+*.suo
+*.user
+*.sln.docstates
+.vs/
