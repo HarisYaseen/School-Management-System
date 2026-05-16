@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Digital Daily Diary</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="tailwind.js"></script>
+    <script src="fa.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -38,6 +38,10 @@
                                     <div id="class-students-list" class="max-h-40 overflow-auto bg-slate-50 rounded-2xl p-4 space-y-2 border border-slate-100">
                                         <!-- Students injected here -->
                                     </div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Diary Subject</label>
+                                    <input type="text" id="d-subject" class="premium-input bg-slate-50 w-full px-5 py-4 rounded-2xl text-sm font-bold" placeholder="e.g. Mathematics Homework">
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Diary Details</label>
@@ -134,7 +138,7 @@
         async function saveDiary() {
             const data = {
                 class_id: document.getElementById('d-class').value,
-                subject: 'Daily Diary',
+                subject: document.getElementById('d-subject').value || 'Daily Diary',
                 entry_date: document.getElementById('d-date').value,
                 content: document.getElementById('d-content').value
             };

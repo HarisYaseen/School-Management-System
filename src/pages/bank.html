@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Bank Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="tailwind.js"></script>
+    <script src="fa.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -107,22 +107,110 @@
                         </div>
                     </div>
 
-                    <!-- POS Net Profit Card -->
-                    <div class="bg-white p-12 rounded-[3rem] shadow-sm border-2 border-prime/10 flex items-center gap-10 group hover:border-prime transition-all hover:shadow-2xl hover:shadow-emerald-500/5 relative overflow-hidden">
-                        <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-8xl text-prime/5 -rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-110"></i>
-                        <div class="w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner relative z-10">
-                            <i class="fa-solid fa-chart-line text-4xl"></i>
+                    </div>
+                </div>
+
+                <!-- Bank Accounts Section -->
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800">Bank Accounts</h3>
+                            <p class="text-sm text-slate-400 font-medium mt-1">Manage your official school bank accounts.</p>
                         </div>
-                        <div class="relative z-10">
-                            <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] mb-2">POS Net Profit</p>
-                            <p class="text-5xl font-black text-slate-800 tracking-tighter" id="profit-total">Rs. 0</p>
-                        </div>
+                        <button onclick="openBankModal()" class="bg-prime text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-xl shadow-prime/20">
+                            <i class="fa-solid fa-plus mr-2"></i> Add Account
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="banks-grid">
+                        <!-- Banks injected by JS -->
                     </div>
                 </div>
 
             </div>
         </div>
     </main>
+
+    <!-- Bank Modal -->
+    <div id="bank-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+            <div class="p-10">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 id="bank-modal-title" class="text-2xl font-black text-slate-800">Add Bank Account</h3>
+                    <button onclick="closeBankModal()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <form onsubmit="saveBank(event)" class="space-y-5">
+                    <input type="hidden" id="bank-id">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Bank Name</label>
+                        <input type="text" id="bank-name" required class="premium-input bg-slate-50 w-full px-6 py-4 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-prime/10 outline-none transition-all" placeholder="e.g. HBL, Meezan Bank">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Account Holder</label>
+                        <input type="text" id="bank-holder" required class="premium-input bg-slate-50 w-full px-6 py-4 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-prime/10 outline-none transition-all" placeholder="Account Title">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Account Number</label>
+                        <input type="text" id="bank-number" required class="premium-input bg-slate-50 w-full px-6 py-4 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-prime/10 outline-none transition-all" placeholder="IBAN or Account No.">
+                    </div>
+                    <div id="initial-balance-container">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Initial Balance</label>
+                        <input type="number" id="bank-balance" class="premium-input bg-slate-50 w-full px-6 py-4 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-prime/10 outline-none transition-all" placeholder="0.00">
+                    </div>
+                    <button type="submit" id="bank-submit-btn" class="w-full bg-prime text-white py-5 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-xl shadow-prime/20 mt-4">
+                        Save Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="txn-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+            <div class="p-10">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-2xl font-black text-slate-800">Record Transaction</h3>
+                    <button onclick="closeTxnModal()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <form onsubmit="saveTransaction(event)" class="space-y-5">
+                    <input type="hidden" id="txn-bank-id">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Transaction Type</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="relative cursor-pointer group">
+                                <input type="radio" name="txn-type" value="deposit" checked class="peer hidden">
+                                <div class="p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-400 font-black text-xs uppercase tracking-widest text-center transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-600">
+                                    <i class="fa-solid fa-arrow-down mr-2"></i> Deposit
+                                </div>
+                            </label>
+                            <label class="relative cursor-pointer group">
+                                <input type="radio" name="txn-type" value="withdraw" class="peer hidden">
+                                <div class="p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-400 font-black text-xs uppercase tracking-widest text-center transition-all peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-600">
+                                    <i class="fa-solid fa-arrow-up mr-2"></i> Withdraw
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Amount (Rs.)</label>
+                        <input type="number" id="txn-amount" required class="premium-input bg-slate-50 w-full px-6 py-4 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-prime/10 outline-none transition-all" placeholder="Enter amount">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Description / Remarks</label>
+                        <input type="text" id="txn-desc" required class="premium-input bg-slate-50 w-full px-6 py-4 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-prime/10 outline-none transition-all" placeholder="e.g. Monthly salary payout">
+                    </div>
+                    <button type="submit" class="w-full bg-prime text-white py-5 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-xl shadow-prime/20 mt-4">
+                        Process Transaction
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="layout.js"></script>
     <script>
@@ -142,9 +230,119 @@
                 document.getElementById('expenses-total').textContent = formatCurrency(stats.expenses);
                 document.getElementById('profit-total').textContent = formatCurrency(stats.posProfit);
                 document.getElementById('net-total').textContent = formatCurrency(stats.netBalance);
+
+                const banks = await window.api.getBanks();
+                const grid = document.getElementById('banks-grid');
+                grid.innerHTML = banks.map(b => `
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border-2 border-prime/5 hover:shadow-xl transition-all group relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-prime group-hover:text-white transition-all">
+                                <i class="fa-solid fa-building-columns text-xl"></i>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editBank(${b.id})" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="deleteBank(${b.id})" class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </div>
+                        <h4 class="font-black text-slate-800 leading-tight">${b.bank_name}</h4>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${b.account_number}</p>
+                        <div class="mt-6 pt-6 border-t border-slate-50 flex justify-between items-end">
+                            <div>
+                                <p class="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Balance</p>
+                                <p class="text-xl font-black text-slate-800">${formatCurrency(b.balance)}</p>
+                            </div>
+                            <button onclick="openTxnModal(${b.id})" class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-lg shadow-emerald-500/10">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('') || '<div class="col-span-full text-center py-10 text-slate-300 font-bold">No bank accounts added yet.</div>';
             } catch (err) {
-                console.error("Failed to load bank stats:", err);
+                console.error("Failed to load bank data:", err);
             }
+        }
+
+        function openBankModal() {
+            document.getElementById('bank-id').value = '';
+            document.getElementById('bank-name').value = '';
+            document.getElementById('bank-holder').value = '';
+            document.getElementById('bank-number').value = '';
+            document.getElementById('bank-balance').value = '';
+            document.getElementById('initial-balance-container').classList.remove('hidden');
+            document.getElementById('bank-modal-title').textContent = 'Add Bank Account';
+            document.getElementById('bank-modal').classList.remove('hidden');
+        }
+
+        function closeBankModal() {
+            document.getElementById('bank-modal').classList.add('hidden');
+        }
+
+        async function saveBank(e) {
+            e.preventDefault();
+            const id = document.getElementById('bank-id').value;
+            const data = {
+                bank_name: document.getElementById('bank-name').value,
+                account_title: document.getElementById('bank-holder').value,
+                account_number: document.getElementById('bank-number').value,
+                balance: parseFloat(document.getElementById('bank-balance').value || 0)
+            };
+            
+            const res = id ? await window.api.updateBank({ id, ...data }) : await window.api.createBank(data);
+            if (res.success) {
+                closeBankModal();
+                showToast(id ? 'Account updated!' : 'Account added!');
+                load();
+            } else showToast(res.error, 'error');
+        }
+
+        async function editBank(id) {
+            const banks = await window.api.getBanks();
+            const b = banks.find(x => x.id === id);
+            if (!b) return;
+            document.getElementById('bank-id').value = b.id;
+            document.getElementById('bank-name').value = b.bank_name;
+            document.getElementById('bank-holder').value = b.account_title;
+            document.getElementById('bank-number').value = b.account_number;
+            document.getElementById('initial-balance-container').classList.add('hidden');
+            document.getElementById('bank-modal-title').textContent = 'Edit Bank Account';
+            document.getElementById('bank-modal').classList.remove('hidden');
+        }
+
+        async function deleteBank(id) {
+            if (!confirm('Are you sure you want to delete this bank account? This will not delete transactions.')) return;
+            const res = await window.api.deleteBank(id);
+            if (res.success) { showToast('Account deleted.'); load(); }
+            else showToast(res.error, 'error');
+        }
+
+        function openTxnModal(bankId) {
+            document.getElementById('txn-bank-id').value = bankId;
+            document.getElementById('txn-amount').value = '';
+            document.getElementById('txn-desc').value = '';
+            document.getElementById('txn-modal').classList.remove('hidden');
+        }
+
+        function closeTxnModal() {
+            document.getElementById('txn-modal').classList.add('hidden');
+        }
+
+        async function saveTransaction(e) {
+            e.preventDefault();
+            const type = document.querySelector('input[name="txn-type"]:checked').value;
+            const data = {
+                bank_id: document.getElementById('txn-bank-id').value,
+                type: type,
+                amount: parseFloat(document.getElementById('txn-amount').value),
+                description: document.getElementById('txn-desc').value,
+                date: new Date().toISOString().split('T')[0]
+            };
+            
+            const res = await window.api.createBankTransaction(data);
+            if (res.success) {
+                closeTxnModal();
+                showToast('Transaction recorded!');
+                load();
+            } else showToast(res.error, 'error');
         }
 
         load();

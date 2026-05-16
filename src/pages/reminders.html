@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Reminders & Tasks</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="tailwind.js"></script>
+    <script src="fa.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -51,7 +51,7 @@
             container.innerHTML = list.map(r => `
                 <div class="flex items-center justify-between p-6 bg-white rounded-[2rem] border-2 ${r.is_done ? 'border-slate-50 opacity-60' : 'border-prime/5'} shadow-sm hover:shadow-md transition-all group">
                     <div class="flex items-center gap-5">
-                        <button onclick="toggleReminder(${r.id}, ${r.is_done})" class="w-8 h-8 rounded-full border-2 ${r.is_done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 text-transparent'} flex items-center justify-center transition-all">
+                        <button onclick="toggleReminder(${r.id})" class="w-8 h-8 rounded-full border-2 ${r.is_done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200 text-transparent'} flex items-center justify-center transition-all">
                             <i class="fa-solid fa-check text-[10px]"></i>
                         </button>
                         <div>
@@ -75,9 +75,8 @@
             }
         }
 
-        async function toggleReminder(id, isDone) {
-            const newStatus = isDone ? 0 : 1;
-            await window.api.call('update-reminder-status', { id, is_done: newStatus });
+        async function toggleReminder(id) {
+            await window.api.toggleReminder(id);
             load();
         }
 

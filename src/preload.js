@@ -161,5 +161,12 @@ contextBridge.exposeInMainWorld('api', {
     getDocumentUrl: (fileName) => ipcRenderer.invoke('get-document-url', fileName),
     deleteDocument: (id) => ipcRenderer.invoke('delete-document', id),
     openDocument: (fileName) => ipcRenderer.invoke('open-doc-now', fileName),
-    getSessionOverview: (id) => ipcRenderer.invoke('get-session-overview', id)
+    getSessionOverview: (id) => ipcRenderer.invoke('get-session-overview', id),
+    openUrl: (url) => ipcRenderer.send('open-url', url),
+    
+    getDiaryEntries: () => ipcRenderer.invoke('get-diary'),
+    createDiaryEntry: (data) => ipcRenderer.invoke('create-diary', data),
+    deleteDiaryEntry: (id) => ipcRenderer.invoke('delete-diary', id),
+    
+    getDailyCollection: (date) => ipcRenderer.invoke('get-daily-collection', date)
 });

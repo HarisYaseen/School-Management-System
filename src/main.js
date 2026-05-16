@@ -36,55 +36,6 @@ ipcMain.handle('delete-document', (e, id) => {
     return run('DELETE FROM student_documents WHERE id=?', [id]);
 });
 // ========================= STUDENT BIODATA =========================
-ipcMain.handle('get-student-biodata', (e, studentId) => {
-    try {
-        const id = parseInt(studentId) || 0;
-        if (!id) return { error: 'Invalid student ID' };
-
-        const student = queryOne('SELECT s.*, c.name as class_name FROM students s LEFT JOIN class_infos c ON s.class_id = c.id WHERE s.id = ?', [id]);
-        if (!student) return { error: 'Student not found' };
-
-        // Siblings (same family_no)
-        let siblings = [];
-        try {
-            if (student.family_no) {
-                siblings = queryAll('SELECT s.id, s.name, c.name as class_name FROM students s LEFT JOIN class_infos c ON s.class_id = c.id WHERE s.family_no = ? AND s.id != ?', [student.family_no, id]);
-            }
-        } catch(e) { siblings = []; }
-
-        // Attendance
-        let attTotal = 0, attPresent = 0, attPct = 0;
-        try {
-            attTotal = queryOne('SELECT COUNT(*) as c FROM attendances WHERE student_id = ?', [id])?.c || 0;
-            attPresent = queryOne("SELECT COUNT(*) as c FROM attendances WHERE student_id = ? AND status = 'present'", [id])?.c || 0;
-            attPct = attTotal > 0 ? Math.round(attPresent * 100 / attTotal) : 0;
-        } catch(e) {}
-
-        // Finance ledger
-        let ledger = [], totalDebit = 0, totalCredit = 0, balance = 0;
-        try {
-            ledger = queryAll('SELECT * FROM fees WHERE student_id = ? ORDER BY created_at DESC LIMIT 20', [id]);
-            totalDebit = Number(queryOne('SELECT SUM(debit) as s FROM fees WHERE student_id = ?', [id])?.s) || 0;
-            totalCredit = Number(queryOne('SELECT SUM(credit) as s FROM fees WHERE student_id = ?', [id])?.s) || 0;
-            balance = totalDebit - totalCredit;
-        } catch(e) {}
-
-        // Exam results
-        let examResults = [];
-        try {
-            examResults = queryAll('SELECT r.*, e.name as exam_name FROM exam_results r JOIN exams e ON r.exam_id = e.id WHERE r.student_id = ? ORDER BY e.created_at DESC', [id]);
-            examResults.forEach(r => {
-                const t = Number(r.total_marks) || 0;
-                const o = Number(r.obtained_marks) || 0;
-                r.percentage = t > 0 ? Math.round(o * 100 / t) : 0;
-            });
-        } catch(e) {}
-
-        return { student, siblings, attTotal, attPresent, attPct, ledger, totalDebit, totalCredit, balance, examResults };
-    } catch(err) {
-        return { error: err.message };
-    }
-});
 
 ipcMain.handle('open-doc-now', (e, fileName) => {
     const filePath = require('path').join(app.getPath('userData'), 'student_documents', fileName);
@@ -93,6 +44,10 @@ ipcMain.handle('open-doc-now', (e, fileName) => {
         return { success: true };
     }
     return { success: false, error: 'File not found.' };
+});
+
+ipcMain.on('open-url', (e, url) => {
+    shell.openExternal(url);
 });
 
 let db;
@@ -184,6 +139,7 @@ function ensureTables() {
     db.run(`CREATE TABLE IF NOT EXISTS timetable (id INTEGER PRIMARY KEY AUTOINCREMENT, class_id INTEGER NOT NULL, day TEXT NOT NULL, period_no INTEGER, subject TEXT, teacher TEXT, start_time TEXT, end_time TEXT, created_at TEXT DEFAULT (datetime('now')));`);
     db.run(`CREATE TABLE IF NOT EXISTS reminders (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, title TEXT NOT NULL, description TEXT, reminder_date TEXT, priority TEXT DEFAULT 'medium', is_done INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')));`);
     db.run(`CREATE TABLE IF NOT EXISTS student_documents (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, title TEXT NOT NULL, file_name TEXT NOT NULL, file_type TEXT, created_at TEXT DEFAULT (datetime('now')));`);
+    db.run(`CREATE TABLE IF NOT EXISTS diary (id INTEGER PRIMARY KEY AUTOINCREMENT, class_id INTEGER NOT NULL, subject TEXT, entry_date TEXT, content TEXT, created_at TEXT DEFAULT (datetime('now')));`);
 
     // 2. Run Migrations
     const currentVersion = queryOne("SELECT MAX(version) as v FROM schema_migrations")?.v || 0;
@@ -434,6 +390,7 @@ ipcMain.handle('create-backup', async () => {
 
 // Auto-Updater Professional Handling
 const { autoUpdater } = require('electron-updater');
+/*
 autoUpdater.on('update-available', () => {
     logInfo('Update available. Starting download...');
     BrowserWindow.getAllWindows().forEach(w => w.webContents.send('update-status', 'Downloading update...'));
@@ -452,10 +409,13 @@ autoUpdater.on('update-downloaded', () => {
 ipcMain.handle('quit-and-install', () => {
     autoUpdater.quitAndInstall();
 });
+*/
 
 ipcMain.handle('get-version', () => app.getVersion());
 
 ipcMain.handle('check-updates', async () => {
+    return { success: true, message: 'Update check is currently disabled.' };
+    /*
     try {
         const { autoUpdater } = require('electron-updater');
         autoUpdater.autoDownload = true;
@@ -469,6 +429,7 @@ ipcMain.handle('check-updates', async () => {
         logError('Update check failed', err);
         return { success: false, message: 'Could not check for updates. ' + (err.message || '') };
     }
+    */
 });
 
 ipcMain.handle('upload-student-picture', async () => {
@@ -1401,5 +1362,22 @@ ipcMain.handle('get-defaulters-report', (e, { classId, minBalance }) => {
         sql += ` GROUP BY s.id HAVING balance >= ? ORDER BY balance DESC`;
         params.push(min);
         return queryAll(sql, params);
+    } catch(e) { return []; }
+});
+
+ipcMain.handle('get-diary', () => {
+    return queryAll('SELECT d.*, c.name as class_name FROM diary d LEFT JOIN class_infos c ON d.class_id = c.id ORDER BY d.entry_date DESC, d.created_at DESC');
+});
+ipcMain.handle('create-diary', (e, d) => run('INSERT INTO diary (class_id, subject, entry_date, content) VALUES (?,?,?,?)', [d.class_id, d.subject||'Daily Diary', d.entry_date, d.content]));
+ipcMain.handle('delete-diary', (e, id) => run('DELETE FROM diary WHERE id=?', [id]));
+
+ipcMain.handle('get-daily-collection', (e, date) => {
+    try {
+        return queryAll(`
+            SELECT f.*, s.name as student_name 
+            FROM fees f 
+            LEFT JOIN students s ON f.student_id = s.id 
+            WHERE date(f.created_at, 'localtime') = ? AND f.credit > 0
+        `, [date]);
     } catch(e) { return []; }
 });

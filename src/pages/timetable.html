@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Timetable Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="tailwind.js"></script>
+    <script src="fa.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -129,7 +129,7 @@
                     div.innerHTML = `
                         <p class="text-[8px] font-black text-prime uppercase tracking-widest mb-1">${item.start_time} - ${item.end_time}</p>
                         <h4 class="text-sm font-black text-slate-800 leading-tight">${item.subject || 'No Subject'}</h4>
-                        <p class="text-[10px] font-bold text-slate-400 mt-2"><i class="fa-solid fa-user-tie mr-1 opacity-50"></i> ${item.teacher_name || 'No Teacher'}</p>
+                        <p class="text-[10px] font-bold text-slate-400 mt-2"><i class="fa-solid fa-user-tie mr-1 opacity-50"></i> ${item.teacher || 'No Teacher'}</p>
                         <button onclick="deletePeriod(${item.id})" class="absolute top-2 right-2 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-times text-xs"></i></button>
                     `;
                     dayCol.appendChild(div);
@@ -150,16 +150,17 @@
         async function savePeriod() {
             const data = {
                 class_id: document.getElementById('t-class-filter').value,
-                day_of_week: document.getElementById('p-day').value,
-                subject_name: document.getElementById('p-subject').value,
+                day: document.getElementById('p-day').value,
+                subject: document.getElementById('p-subject').value,
                 start_time: document.getElementById('p-start').value,
                 end_time: document.getElementById('p-end').value,
-                teacher_id: document.getElementById('p-teacher').value
+                teacher: document.getElementById('p-teacher').options[document.getElementById('p-teacher').selectedIndex].text,
+                period_no: 0 // Default or could be derived
             };
 
-            if (!data.subject_name || !data.start_time) return showToast('Missing required fields.', 'error');
+            if (!data.subject || !data.start_time) return showToast('Missing required fields.', 'error');
 
-            const res = await window.api.createTimetableItem(data);
+            const res = await window.api.saveTimetableEntry(data);
             if (res.success) {
                 showToast('Period added!');
                 closeModal('period-modal');
@@ -169,7 +170,7 @@
 
         async function deletePeriod(id) {
             if (!confirm('Remove this period?')) return;
-            await window.api.deleteTimetableItem(id);
+            await window.api.deleteTimetableEntry(id);
             loadTimetable();
         }
 
