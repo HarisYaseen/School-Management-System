@@ -168,5 +168,6 @@ contextBridge.exposeInMainWorld('api', {
     createDiaryEntry: (data) => ipcRenderer.invoke('create-diary', data),
     deleteDiaryEntry: (id) => ipcRenderer.invoke('delete-diary', id),
     
-    getDailyCollection: (date) => ipcRenderer.invoke('get-daily-collection', date)
+    getDailyCollection: (date) => ipcRenderer.invoke('get-daily-collection', date),
+    getDbPath: () => ipcRenderer.invoke('get-db-path')
 });

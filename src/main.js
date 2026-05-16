@@ -50,6 +50,8 @@ ipcMain.on('open-url', (e, url) => {
     shell.openExternal(url);
 });
 
+ipcMain.handle('get-db-path', () => require('path').join(app.getPath('userData'), 'database.sqlite'));
+
 let db;
 
 // Strict Mode: Professional Logging
