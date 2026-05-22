@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Reporting Center</title>
     <script src="tailwind.js"></script>
-    <script src="fa.js"></script>
+    
     
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -34,8 +34,8 @@
                             <button onclick="window.location.href='certificates.html'" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex justify-between items-center">
                                 Certificates Hub <i class="fa-solid fa-chevron-right text-[10px]"></i>
                             </button>
-                            <button onclick="showClassStrength()" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex justify-between items-center">
-                                Class Strength Report <i class="fa-solid fa-users-viewfinder text-[10px]"></i>
+                            <button onclick="window.location.href='attendance.html'" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex justify-between items-center">
+                                Attendance Register <i class="fa-solid fa-chevron-right text-[10px]"></i>
                             </button>
                         </div>
                     </div>
@@ -47,9 +47,6 @@
                         </div>
                         <h4 class="text-lg font-black text-slate-800 mb-2">Financial Reports</h4>
                         <div class="space-y-3">
-                            <button onclick="showDailyReport()" class="w-full text-left p-4 bg-prime text-white rounded-2xl text-xs font-bold hover:bg-slate-700 transition-all flex justify-between items-center shadow-lg shadow-prime/20">
-                                Daily Collection Report <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
-                            </button>
                             <button onclick="showFeeReport()" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all flex justify-between items-center">
                                 Monthly Fee Collection <i class="fa-solid fa-chevron-right text-[10px]"></i>
                             </button>
@@ -72,11 +69,8 @@
                             <button onclick="window.location.href='staff.html'" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all flex justify-between items-center">
                                 Employee Records <i class="fa-solid fa-chevron-right text-[10px]"></i>
                             </button>
-                            <button onclick="showPayrollSummary()" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all flex justify-between items-center">
-                                Monthly Payroll Summary <i class="fa-solid fa-file-invoice-dollar text-[10px]"></i>
-                            </button>
-                            <button onclick="window.location.href='staff_attendance.html'" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all flex justify-between items-center">
-                                Staff Attendance Report <i class="fa-solid fa-user-check text-[10px]"></i>
+                            <button onclick="window.location.href='id_cards.html'" class="w-full text-left p-4 bg-slate-50 rounded-2xl text-xs font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-600 transition-all flex justify-between items-center">
+                                ID Card Center <i class="fa-solid fa-chevron-right text-[10px]"></i>
                             </button>
                         </div>
                     </div>
@@ -109,46 +103,6 @@
 
         let currentReportData = [];
         let currentReportType = '';
-
-        async function showDailyReport() {
-            const today = new Date().toISOString().split('T')[0];
-            const data = await window.api.getDailyCollection(today);
-            currentReportData = data;
-            currentReportType = 'Daily Collection Report (' + new Date().toLocaleDateString() + ')';
-            
-            document.getElementById('report-title').textContent = currentReportType;
-            document.getElementById('report-content').innerHTML = `
-                <table class="w-full">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">#</th>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">Student</th>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">Type</th>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">Description</th>
-                            <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase pr-8">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        ${data.map((r, i) => `
-                            <tr>
-                                <td class="px-6 py-4 text-xs font-black text-slate-300">${i + 1}</td>
-                                <td class="px-6 py-4 text-xs font-black text-slate-800">${r.student_name}</td>
-                                <td class="px-6 py-4 text-[9px] font-black uppercase text-indigo-500">${r.type}</td>
-                                <td class="px-6 py-4 text-xs font-medium text-slate-500">${r.description || '—'}</td>
-                                <td class="px-6 py-4 text-xs font-black text-emerald-600 text-right pr-8">${formatCurrency(r.credit)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                    <tfoot class="bg-slate-50 border-t-2 border-slate-100">
-                        <tr>
-                            <td colspan="4" class="px-6 py-4 text-right text-xs font-black text-slate-400 uppercase tracking-widest">Total Collection</td>
-                            <td class="px-6 py-4 text-right text-sm font-black text-prime pr-8">${formatCurrency(data.reduce((acc, curr) => acc + (curr.credit || 0), 0))}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            `;
-            openModal('report-modal');
-        }
 
         async function showFeeReport() {
             const data = await window.api.getFeeReport({ month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }) });
@@ -209,87 +163,6 @@
                             </tr>
                         `).join('')}
                     </tbody>
-                </table>
-            `;
-            openModal('report-modal');
-        }
-
-        async function showClassStrength() {
-            const data = await window.api.getClassStrength();
-            currentReportData = data;
-            currentReportType = 'Class Strength Report';
-            
-            document.getElementById('report-title').textContent = currentReportType;
-            document.getElementById('report-content').innerHTML = `
-                <table class="w-full">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">Class Name</th>
-                            <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase">Boys</th>
-                            <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase">Girls</th>
-                            <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase">Total Students</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        ${data.map(r => `
-                            <tr>
-                                <td class="px-6 py-4 text-sm font-black text-slate-700">${r.class_name}</td>
-                                <td class="px-6 py-4 text-sm font-bold text-indigo-500 text-center">${r.boys || 0}</td>
-                                <td class="px-6 py-4 text-sm font-bold text-rose-500 text-center">${r.girls || 0}</td>
-                                <td class="px-6 py-4 text-sm font-black text-prime text-center bg-slate-50/50">${r.total || 0}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                    <tfoot class="bg-slate-100 font-black">
-                        <tr>
-                            <td class="px-6 py-4 text-xs uppercase tracking-widest text-slate-400">Grand Total</td>
-                            <td class="px-6 py-4 text-center text-indigo-600">${data.reduce((acc, c) => acc + (c.boys || 0), 0)}</td>
-                            <td class="px-6 py-4 text-center text-rose-600">${data.reduce((acc, c) => acc + (c.girls || 0), 0)}</td>
-                            <td class="px-6 py-4 text-center text-prime text-lg">${data.reduce((acc, c) => acc + (c.total || 0), 0)}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            `;
-            openModal('report-modal');
-        }
-
-        async function showPayrollSummary() {
-            const month = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-            const data = await window.api.getPayroll({ month });
-            currentReportData = data;
-            currentReportType = 'Monthly Payroll Summary - ' + month;
-            
-            document.getElementById('report-title').textContent = currentReportType;
-            document.getElementById('report-content').innerHTML = `
-                <table class="w-full">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">Staff Member</th>
-                            <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase">Designation</th>
-                            <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase">Basic</th>
-                            <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase">Allow.</th>
-                            <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase">Deduc.</th>
-                            <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase pr-8">Net Paid</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        ${data.map(r => `
-                            <tr>
-                                <td class="px-6 py-4 text-xs font-black text-slate-700">${r.staff_name}</td>
-                                <td class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">${r.designation}</td>
-                                <td class="px-6 py-4 text-xs font-bold text-slate-600 text-right">${formatNum(r.basic_salary)}</td>
-                                <td class="px-6 py-4 text-xs font-bold text-emerald-600 text-right">+${formatNum(r.allowance)}</td>
-                                <td class="px-6 py-4 text-xs font-bold text-rose-600 text-right">-${formatNum(r.deduction)}</td>
-                                <td class="px-6 py-4 text-xs font-black text-prime text-right pr-8">${formatCurrency(r.net_paid)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                    <tfoot class="bg-slate-50 font-black">
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-right text-xs uppercase tracking-widest text-slate-400">Total Disbursement</td>
-                            <td class="px-6 py-4 text-right text-prime text-lg pr-8">${formatCurrency(data.reduce((acc, c) => acc + (c.net_paid || 0), 0))}</td>
-                        </tr>
-                    </tfoot>
                 </table>
             `;
             openModal('report-modal');
@@ -357,8 +230,6 @@
                         th { background: var(--brand-th-bg) !important; color: var(--brand-th-text) !important; font-weight: 900; font-size: 10px; text-transform: uppercase; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                         td { font-size: 11px; font-weight: 700; color: var(--brand-primary); }
                         tr:nth-child(even) { background: ${activePattern === 'beacon_hall' ? '#fffba850' : '#f8fafc50'} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                        tfoot { background: var(--brand-th-bg) !important; color: var(--brand-th-text) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                        tfoot td { color: var(--brand-th-text) !important; font-weight: 900; }
                     </style>
                 </head>
                 <body>

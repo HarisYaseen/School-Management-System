@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Certificate Generation</title>
     <script src="tailwind.js"></script>
-    <script src="fa.js"></script>
+    
     
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -56,22 +56,6 @@
                         <h4 class="text-lg font-black text-slate-800 tracking-tight">Warning Letter</h4>
                         <p class="text-xs font-bold text-slate-400 mt-2 leading-relaxed">Formal notification for disciplinary or fee issues.</p>
                     </div>
-
-                    <div class="bg-white rounded-[2.5rem] p-8 border-2 border-prime/5 shadow-sm hover:border-prime transition-all cursor-pointer group text-center" onclick="generateCert('leaving')">
-                        <div class="w-20 h-20 rounded-[2rem] bg-amber-50 text-amber-500 mx-auto mb-6 flex items-center justify-center text-3xl transition-all group-hover:scale-110">
-                            <i class="fa-solid fa-door-open"></i>
-                        </div>
-                        <h4 class="text-lg font-black text-slate-800 tracking-tight">Leaving Certificate</h4>
-                        <p class="text-xs font-bold text-slate-400 mt-2 leading-relaxed">Official school leaving/transfer document.</p>
-                    </div>
-
-                    <div class="bg-white rounded-[2.5rem] p-8 border-2 border-prime/5 shadow-sm hover:border-prime transition-all cursor-pointer group text-center" onclick="generateCert('bonafide')">
-                        <div class="w-20 h-20 rounded-[2rem] bg-blue-50 text-blue-500 mx-auto mb-6 flex items-center justify-center text-3xl transition-all group-hover:scale-110">
-                            <i class="fa-solid fa-stamp"></i>
-                        </div>
-                        <h4 class="text-lg font-black text-slate-800 tracking-tight">Bonafide Certificate</h4>
-                        <p class="text-xs font-bold text-slate-400 mt-2 leading-relaxed">Verification for bank, passport or scholarship.</p>
-                    </div>
                 </div>
 
                 <!-- NEW: Uploaded Documents Section -->
@@ -104,51 +88,39 @@
                 return;
             }
 
-            try {
-                const data = await window.api.globalSearch(q);
-                const filtered = (data || []).filter(x => x.type === 'student');
-                
-                if (filtered.length === 0) {
-                    results.innerHTML = '<div class="p-8 text-center text-slate-300 font-bold">No students found matching your search.</div>';
-                } else {
-                    const rows = await Promise.all(filtered.map(async s => {
-                        let picUrl = '';
-                        if (s.picture) {
-                            const urlData = await window.api.getStudentPictureUrl(s.picture);
-                            if (urlData && urlData.url) picUrl = urlData.url;
-                            
-                            // Fallback to Base64 if URL seems problematic (optional, but let's try it for robustness)
-                            if (window.api.getImageBase64) {
-                                const b64 = await window.api.getImageBase64(s.picture);
-                                if (b64 && b64.success) picUrl = b64.data;
-                            }
-                        }
-                        
-                        return `
-                            <div onclick="selectStudentForCert(${s.id}, '${s.name.replace(/'/g, "\\'")}', '${s.roll_no}')" class="flex items-center justify-between p-5 bg-slate-50 rounded-2xl hover:bg-prime hover:text-white cursor-pointer transition-all group shadow-sm">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-14 h-14 rounded-2xl bg-white flex items-center justify-center font-black group-hover:bg-white group-hover:text-prime overflow-hidden border-2 border-slate-100">
-                                        ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='${s.name.charAt(0)}'">` : s.name.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <p class="font-black text-sm">${s.name}</p>
-                                        <p class="text-[10px] font-bold opacity-60">Roll No: ${s.roll_no}</p>
-                                    </div>
+            const data = await window.api.globalSearch(q);
+            const filtered = data.filter(x => x.type === 'student');
+            
+            if (filtered.length === 0) {
+                results.innerHTML = '<div class="p-8 text-center text-slate-300 font-bold">No students found matching your search.</div>';
+            } else {
+                const rows = await Promise.all(filtered.map(async s => {
+                    let picUrl = '';
+                    // Fetch student full info to get picture field (globalSearch might only have basic info)
+                    const student = await window.api.getStudent(s.id);
+                    if (student.picture) {
+                        const url = await window.api.getStudentPictureUrl(student.picture);
+                        if (url) picUrl = url;
+                    }
+                    
+                    return `
+                        <div onclick="selectStudentForCert(${s.id}, '${s.name.replace(/'/g, "\\'")}', '${s.roll_no}')" class="flex items-center justify-between p-5 bg-slate-50 rounded-2xl hover:bg-prime hover:text-white cursor-pointer transition-all group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center font-black group-hover:bg-white group-hover:text-prime overflow-hidden">
+                                    ${picUrl ? `<img src="${picUrl}" class="w-full h-full object-cover">` : s.name.charAt(0)}
                                 </div>
-                                <div class="w-8 h-8 rounded-full bg-prime/5 flex items-center justify-center group-hover:bg-white/20">
-                                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                <div>
+                                    <p class="font-black text-sm">${s.name}</p>
+                                    <p class="text-[10px] font-bold opacity-60">Roll No: ${s.roll_no}</p>
                                 </div>
                             </div>
-                        `;
-                    }));
-                    results.innerHTML = rows.join('');
-                }
-                results.classList.remove('hidden');
-            } catch (err) {
-                console.error('Search error:', err);
-                results.innerHTML = '<div class="p-8 text-center text-rose-300 font-bold">Search failed. Please check connection.</div>';
-                results.classList.remove('hidden');
+                            <i class="fa-solid fa-check-circle opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        </div>
+                    `;
+                }));
+                results.innerHTML = rows.join('');
             }
+            results.classList.remove('hidden');
         }
 
         async function selectStudentForCert(id, name, roll) {
@@ -169,16 +141,14 @@
                             <i class="fa-solid ${d.file_type === '.pdf' ? 'fa-file-pdf text-rose-500' : 'fa-image text-indigo-500'}"></i>
                         </div>
                         <div class="flex-1 overflow-hidden">
-                            <p class="text-sm font-black text-slate-700 truncate">${d.title || 'Document'}</p>
-                            <p class="text-[9px] font-bold text-slate-400">${new Date(d.created_at).toLocaleDateString()}</p>
-                            <button onclick="viewDoc('${d.file_name}')" class="text-[10px] font-black text-prime uppercase hover:underline mt-1">View Document</button>
+                            <p class="text-sm font-black text-slate-700 truncate">${d.title}</p>
+                            <button onclick="viewDoc('${d.file_name}')" class="text-[10px] font-black text-prime uppercase hover:underline">View Document</button>
                         </div>
                     </div>
                 `).join('');
                 section.classList.remove('hidden');
             } else {
-                list.innerHTML = '<div class="col-span-full p-10 text-center text-slate-300 font-bold bg-slate-50 rounded-[2rem]">No uploaded documents found for this student.</div>';
-                section.classList.remove('hidden');
+                section.classList.add('hidden');
             }
         }
 

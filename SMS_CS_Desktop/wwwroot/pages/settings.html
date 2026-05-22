@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Settings</title>
     <script src="tailwind.js"></script>
-    <script src="fa.js"></script>
+    
     
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -18,26 +18,9 @@
                 <!-- School Info -->
                 <div class="bg-white p-10 rounded-[2rem] shadow-sm border-2 border-prime/10 relative overflow-hidden">
                     <i class="fa-solid fa-graduation-cap absolute -right-8 -top-8 text-9xl text-prime/5 -rotate-12 pointer-events-none"></i>
-                    <div class="flex flex-col md:flex-row gap-10 items-start">
-                        <!-- Logo Upload Section -->
-                        <div class="w-full md:w-48 shrink-0">
-                            <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-4 block">School Logo</label>
-                            <div class="relative group cursor-pointer" onclick="uploadLogo()">
-                                <div id="logo-preview-container" class="w-40 h-40 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-prime group-hover:bg-slate-100">
-                                    <img id="logo-preview" class="w-full h-full object-cover hidden">
-                                    <div id="logo-placeholder" class="text-center p-4">
-                                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 mb-2"></i>
-                                        <p class="text-[10px] font-black text-slate-400 uppercase">Upload<br>Logo</p>
-                                    </div>
-                                </div>
-                                <div class="absolute -bottom-2 -right-2 w-10 h-10 bg-prime text-white rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                                    <i class="fa-solid fa-camera text-sm"></i>
-                                </div>
-                            </div>
-                            <input type="hidden" id="school-logo">
-                        </div>
-
-                        <form onsubmit="saveSettings(event)" class="flex-1 space-y-6 w-full">
+                    <h3 class="text-xl font-black text-slate-800 mb-2">School Information</h3>
+                    <p class="text-sm text-slate-400 mb-8">Basic details about your school displayed throughout the app.</p>
+                    <form onsubmit="saveSettings(event)" class="space-y-6">
                         <div>
                             <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">School Name</label>
                             <input type="text" id="school-name" class="premium-input bg-slate-50 w-full px-4 py-3.5 rounded-xl text-sm font-medium">
@@ -60,9 +43,8 @@
                             <label class="text-xs font-black text-slate-500 uppercase tracking-wider mb-2 block">DMC Layout Code (Secret Feature Key)</label>
                             <input type="text" id="dmc-pattern" class="premium-input bg-slate-50 w-full px-4 py-3.5 rounded-xl text-sm font-medium" placeholder="Leave empty for default pattern. Enter secret key for custom school DMC.">
                         </div>
-                            <button type="submit" class="bg-prime text-white px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all shadow-lg shadow-prime/20">Save Settings</button>
-                        </form>
-                    </div>
+                        <button type="submit" class="bg-prime text-white px-8 py-3.5 rounded-xl font-bold text-sm hover:bg-slate-700 transition-all shadow-lg shadow-prime/20">Save Settings</button>
+                    </form>
                 </div>
 
                 <!-- Class & Subject Management -->
@@ -250,27 +232,7 @@
             document.getElementById('school-address').value = settings.school_address || '';
             document.getElementById('dmc-pattern').value = settings.dmc_pattern || '';
             
-            if (settings.school_logo) {
-                document.getElementById('school-logo').value = settings.school_logo;
-                const preview = document.getElementById('logo-preview');
-                preview.src = `http://app.sms/pictures/${settings.school_logo}`;
-                preview.classList.remove('hidden');
-                document.getElementById('logo-placeholder').classList.add('hidden');
-            }
-            
             renderClasses();
-        }
-
-        async function uploadLogo() {
-            const res = await window.api.uploadStudentPicture();
-            if (res.success && res.fileName) {
-                document.getElementById('school-logo').value = res.fileName;
-                const preview = document.getElementById('logo-preview');
-                preview.src = `http://app.sms/pictures/${res.fileName}`;
-                preview.classList.remove('hidden');
-                document.getElementById('logo-placeholder').classList.add('hidden');
-                showToast('Logo uploaded! Save settings to apply.');
-            }
         }
 
         function renderClasses() {
@@ -340,7 +302,6 @@
                 school_contact: document.getElementById('school-contact').value,
                 school_email: document.getElementById('school-email').value,
                 school_address: document.getElementById('school-address').value,
-                school_logo: document.getElementById('school-logo').value,
                 dmc_pattern: document.getElementById('dmc-pattern').value
             };
             const result = await window.api.saveSettings(data);

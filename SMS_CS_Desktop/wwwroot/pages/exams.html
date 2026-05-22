@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Exams & Results</title>
     <script src="tailwind.js"></script>
-    <script src="fa.js"></script>
+    
     
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -1492,10 +1492,7 @@
                             <div class="header">
                                 ${settings.school_logo ? `<img src="http://app.sms/pictures/${settings.school_logo}" style="height: 60px; object-fit: contain; margin-bottom: 10px; border-radius: 4px;">` : ''}
                                 <h1 style="margin: 0; font-size: 32px; font-weight: 900; text-transform: uppercase;">${settings.school_name || 'SMS CONNECT'}</h1>
-                                <p style="margin: 5px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1px;">
-                                    ${settings.school_address || ''} ${settings.school_contact ? ' | ' + settings.school_contact : ''}
-                                </p>
-                                <p style="margin: 10px 0 0 0; font-weight: 900; color: #1e293b; text-transform: uppercase; font-size: 14px;">DETAILED MARKS CERTIFICATE (DMC)</p>
+                                <p style="margin: 5px 0 0 0; font-weight: 700; color: #64748b;">DETAILED MARKS CERTIFICATE (DMC)</p>
                                 <div style="background: #1e293b; color: white; display: inline-block; padding: 5px 20px; border-radius: 5px; margin-top: 15px; font-weight: 900; font-size: 12px; text-transform: uppercase;">${dmc.exam.name}</div>
                             </div>
 

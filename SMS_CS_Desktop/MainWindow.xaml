@@ -1,0 +1,13 @@
+<Window x:Class="SMS_CS_Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="SMS Connect" Height="900" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
+    <Grid>
+        <wv2:WebView2 Name="webView" 
+                      Source="about:blank"
+                      DefaultBackgroundColor="Transparent"/>
+    </Grid>
+</Window>

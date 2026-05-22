@@ -49,6 +49,7 @@ function buildSidebar(activePage) {
     const groups = [
         { label: 'General', items: [
             { page: 'dashboard', icon: 'fa-grip-vertical', label: 'Dashboard', href: 'dashboard.html' },
+            { page: 'calendar', icon: 'fa-calendar-day', label: 'School Calendar', href: 'calendar.html' },
             { page: 'reminders', icon: 'fa-bell', label: 'Reminders', href: 'reminders.html' },
             { page: 'sms', icon: 'fa-comment-sms', label: 'SMS Portal', href: 'sms.html' }
         ]},
@@ -77,6 +78,8 @@ function buildSidebar(activePage) {
         ]},
         { label: 'Management', perm: 'hr', items: [
             { page: 'staff', icon: 'fa-user-tie', label: 'Staff HR', href: 'staff.html' },
+            { page: 'payroll', icon: 'fa-file-invoice-dollar', label: 'Staff Payroll', href: 'payroll.html' },
+            { page: 'staff_attendance', icon: 'fa-user-check', label: 'Staff Attendance', href: 'staff_attendance.html' },
             { page: 'users', icon: 'fa-user-gear', label: 'User Roles', href: 'users.html' },
             { page: 'sessions', icon: 'fa-clock-rotate-left', label: 'Sessions', href: 'sessions.html' }
         ]},
@@ -93,39 +96,30 @@ function buildSidebar(activePage) {
     }).filter(g => g !== null);
 
     return `
-    <aside class="w-24 hover:w-72 bg-prime text-white flex flex-col h-screen shadow-2xl relative z-20 transition-all duration-300 group/sidebar">
+    <aside class="w-64 bg-prime text-white flex flex-col h-screen shadow-2xl relative z-20">
         <div class="p-6 flex items-center gap-4 flex-shrink-0">
-             <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-graduation-cap text-lg"></i></div>
-             <span id="sidebar-logo-text" class="font-black text-lg opacity-0 invisible group-hover/sidebar:opacity-100 group-hover/sidebar:visible transition-all duration-300 whitespace-normal break-words max-w-[180px] uppercase tracking-tighter">SMS CONNECT</span>
+             <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden" id="sidebar-logo-container">
+                <i class="fa-solid fa-graduation-cap text-lg animate-pulse" id="sidebar-default-logo"></i>
+             </div>
+             <span id="sidebar-logo-text" class="font-black text-lg whitespace-normal break-words max-w-[180px] uppercase tracking-tighter leading-none">SMS<br><span class="text-[10px] opacity-60">Connect</span></span>
         </div>
-        <nav class="flex-1 px-4 space-y-6 overflow-y-auto pt-4 scrollbar-hide group-hover/sidebar:scrollbar-default">
+        <nav id="sidebar-nav" class="flex-1 px-4 space-y-3 overflow-y-auto pt-4 sidebar-scroll">
             ${filtered.map(g => `
-                <div class="space-y-1">
-                    <p class="text-[9px] font-black text-white/20 uppercase px-4 opacity-0 group-hover/sidebar:opacity-100 mb-2 tracking-widest">${g.label}</p>
+                <div class="space-y-0.5">
+                    <p class="text-[8px] font-black text-white/20 uppercase px-4 mb-1 tracking-widest">${g.label}</p>
                     ${g.items.map(item => `
-                        <a href="${item.href}" class="flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activePage === item.page ? 'bg-white text-prime shadow-lg' : 'text-white/60 hover:bg-white/5'}">
-                            <i class="fa-solid ${item.icon} w-6 text-center text-sm"></i>
-                            <span class="text-sm font-bold opacity-0 group-hover/sidebar:opacity-100 transition-opacity whitespace-nowrap">${item.label}</span>
+                        <a href="${item.href}" class="flex items-center gap-4 px-4 py-2 rounded-xl transition-all ${activePage === item.page ? 'bg-white text-prime shadow-xl scale-105 active-nav-item' : 'text-white/60 hover:bg-white/5 hover:text-white'}">
+                            <i class="fa-solid ${item.icon} w-5 text-center text-sm"></i>
+                            <span class="text-[13px] font-bold whitespace-nowrap">${item.label}</span>
                         </a>
                     `).join('')}
                 </div>
             `).join('')}
         </nav>
-        <style>
-            .scrollbar-hide::-webkit-scrollbar { display: none; }
-            .group-hover\\/sidebar\\:scrollbar-default:hover::-webkit-scrollbar { 
-                display: block; 
-                width: 4px;
-            }
-            .group-hover\\/sidebar\\:scrollbar-default:hover::-webkit-scrollbar-thumb {
-                background: rgba(255,255,255,0.1);
-                border-radius: 10px;
-            }
-        </style>
         <div class="p-4 border-t border-white/5">
-            <div onclick="logout()" class="flex items-center gap-4 px-4 py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer">
-                <i class="fa-solid fa-power-off w-6 text-center"></i>
-                <span class="text-sm font-bold opacity-0 group-hover/sidebar:opacity-100 transition-opacity">Logout</span>
+            <div onclick="logout()" class="flex items-center gap-4 px-4 py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-all">
+                <i class="fa-solid fa-power-off w-5 text-center"></i>
+                <span class="text-sm font-bold">Logout</span>
             </div>
         </div>
     </aside>`;
@@ -135,20 +129,23 @@ function buildTopbar(title) {
     const user = getUser();
     const isAdmin = (user?.role || 'staff').toLowerCase().trim() === 'admin';
     return `
-    <header class="h-20 bg-white border-b flex items-center justify-between px-10">
-        <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">${title}</h2>
+    <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-10 w-full flex-shrink-0 relative z-10">
         <div class="flex items-center gap-4">
-            <div class="text-right">
-                <p class="text-sm font-black text-slate-800">${user?.name || 'User'}</p>
-                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}">
-                    ${isAdmin ? 'Administrator' : 'Staff / Teacher'}
-                </span>
-            </div>
-            <div class="w-10 h-10 rounded-xl bg-prime text-white flex items-center justify-center font-black">
-                ${(user?.name || 'U').charAt(0)}
+            <h2 class="text-xl font-black text-slate-800 tracking-tight">${title}</h2>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 bg-slate-50 p-1.5 pr-4 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-prime/20">
+                <div class="w-10 h-10 rounded-xl bg-prime overflow-hidden flex items-center justify-center text-white font-black text-sm shadow-md" id="topbar-avatar-container">
+                    ${(user?.name || 'A').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <p class="text-[11px] font-black text-slate-700 leading-none mb-0.5">${user?.name || 'Admin'}</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${user?.role || 'Staff'}</p>
+                </div>
             </div>
         </div>
-    </header>`;
+        </header>
+    `;
 }
 
 function showToast(msg, type = 'success') {
@@ -162,6 +159,21 @@ function showToast(msg, type = 'success') {
 
 function formatNum(n) { return new Intl.NumberFormat().format(Number(n) || 0); }
 function formatCurrency(n) { return 'Rs. ' + formatNum(n); }
+
+function formatDate(d) { 
+    if (!d) return '—'; 
+    try {
+        return new Date(d.replace(' ', 'T')).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }); 
+    } catch(e) { return d; }
+}
+
+function formatDateTime(d) { 
+    if (!d) return '—'; 
+    try {
+        return new Date(d.replace(' ', 'T')).toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }); 
+    } catch(e) { return d; }
+}
+
 function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
@@ -226,15 +238,45 @@ document.addEventListener('click', (e) => {
 window.getPrintHeader = async () => {
     try {
         const settings = await window.api.getSettings();
+        
+        // CENTRALIZED DYNAMIC PRINT HEADER THEMING
+        const brandThemes = {
+            'default': { primary: '#1e293b', secondary: '#64748b', border: '#1e293b' },
+            'beacon_hall': { primary: '#0c5a85', secondary: '#55667a', border: '#c5a059' }
+        };
+        const activePattern = settings.dmc_pattern || 'default';
+        const theme = brandThemes[activePattern] || brandThemes['default'];
+
+        const logoHtml = settings.school_logo 
+            ? `
+            <div style="position:absolute;left:0;top:50%;transform:translateY(-50%);width:75px;height:75px;border-radius:12px;border:2px solid ${theme.border};background:white;padding:4px;box-shadow:0 4px 10px rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;">
+                <img src="http://app.sms/pictures/${settings.school_logo}" style="max-height:100%;max-width:100%;object-fit:contain;">
+            </div>
+            ` 
+            : '';
+
+        // DYNAMIC TWO-LINE SPLITTING ALGORITHM
+        let schoolNameHtml = settings.school_name || 'SMS CONNECT';
+        const nameParts = schoolNameHtml.split(' ');
+        if (nameParts.length > 2) {
+            const mid = Math.ceil(nameParts.length / 2);
+            const line1 = nameParts.slice(0, mid).join(' ');
+            const line2 = nameParts.slice(mid).join(' ');
+            schoolNameHtml = `${line1}<br>${line2}`;
+        }
+            
         return `
-            <div style="text-align:center;border-bottom:2px solid #1e293b;padding-bottom:15px;margin-bottom:20px;font-family:'Outfit',sans-serif;">
-                <h1 style="margin:0;font-size:28px;font-weight:900;text-transform:uppercase;color:#1e293b;">${settings.school_name || 'SMS CONNECT'}</h1>
-                <p style="margin:5px 0;font-size:12px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;">
-                    ${settings.school_address || 'Update School Address in Settings'}
-                </p>
-                <div style="display:flex;justify-content:center;gap:20px;margin-top:5px;font-size:11px;font-weight:800;color:#94a3b8;">
-                    <span><i class="fa-solid fa-phone"></i> ${settings.school_contact || 'Update Contact'}</span>
-                    <span><i class="fa-solid fa-envelope"></i> ${settings.school_email || 'Update Email'}</span>
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:3px solid ${theme.border};padding-bottom:15px;margin-bottom:20px;font-family:'Outfit',sans-serif;width:100%;box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;min-height:85px;text-align:center;">
+                ${logoHtml}
+                <div style="text-align:center;width:100%;max-width:550px;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <h1 style="margin:0;font-size:22px;font-weight:900;text-transform:uppercase;color:${theme.primary};letter-spacing:0.5px;line-height:1.2;text-align:center;">${schoolNameHtml}</h1>
+                    <p style="margin:4px 0 0 0;font-size:10px;font-weight:700;color:${theme.secondary};letter-spacing:0.5px;text-transform:uppercase;text-align:center;">
+                        <i class="fa-solid fa-location-dot" style="margin-right:5px;color:${theme.border};-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;"></i>${settings.school_address || 'Update School Address in Settings'}
+                    </p>
+                    <div style="display:flex;justify-content:center;gap:20px;margin-top:6px;font-size:9px;font-weight:800;color:${theme.secondary}b0;text-align:center;width:100%;">
+                        <span><i class="fa-solid fa-phone" style="margin-right:5px;color:${theme.border};-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;"></i>${settings.school_contact || 'Update Contact'}</span>
+                        <span><i class="fa-solid fa-envelope" style="margin-right:5px;color:${theme.border};-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;"></i>${settings.school_email || 'Update Email'}</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -245,18 +287,60 @@ window.getPrintHeader = async () => {
 
 // Auto-load school name into sidebar
 document.addEventListener('DOMContentLoaded', async () => {
+    // Robust Sidebar Scroll Persistence & Active centering
+    const nav = document.getElementById('sidebar-nav');
+    if (nav) {
+        let attempts = 0;
+        const forceScroll = () => {
+            const saved = localStorage.getItem('sidebar_scroll');
+            const active = nav.querySelector('.active-nav-item');
+            if (saved && parseInt(saved, 10) > 0) {
+                nav.scrollTop = parseInt(saved, 10);
+            } else if (active) {
+                nav.scrollTop = active.offsetTop - nav.offsetTop - 100;
+            }
+            attempts++;
+            if (attempts < 10) setTimeout(forceScroll, 50);
+        };
+        forceScroll();
+
+        nav.addEventListener('scroll', () => {
+            if (nav.scrollTop >= 0) {
+                localStorage.setItem('sidebar_scroll', nav.scrollTop);
+            }
+        });
+    }
+
     try {
         const settings = await window.api.getSettings();
-        if (settings && settings.school_name) {
-            const logoText = document.getElementById('sidebar-logo-text');
-            if (logoText) {
-                const words = settings.school_name.split(' ');
-                if (words.length > 1) {
-                    const firstPart = words.slice(0, -1).join(' ');
-                    const lastPart = words[words.length - 1];
-                    logoText.innerHTML = `${firstPart} <span style="color:#fb7185;text-decoration:underline">${lastPart}</span>`;
-                } else {
-                    logoText.textContent = settings.school_name;
+        if (settings) {
+            // Update Logo in Sidebar
+            if (settings.school_logo) {
+                const container = document.getElementById('sidebar-logo-container');
+                if (container) {
+                    container.innerHTML = `<img src="http://app.sms/pictures/${settings.school_logo}" style="width:100%;height:100%;object-fit:cover;">`;
+                }
+            }
+
+            // Update Avatar in Topbar
+            if (settings.school_logo) {
+                const avatar = document.getElementById('topbar-avatar-container');
+                if (avatar) {
+                    avatar.innerHTML = `<img src="http://app.sms/pictures/${settings.school_logo}" style="width:100%;height:100%;object-fit:cover;">`;
+                }
+            }
+
+            if (settings.school_name) {
+                const logoText = document.getElementById('sidebar-logo-text');
+                if (logoText) {
+                    const words = settings.school_name.split(' ');
+                    if (words.length > 1) {
+                        const firstPart = words.slice(0, -1).join(' ');
+                        const lastPart = words[words.length - 1];
+                        logoText.innerHTML = `${firstPart} <span style="color:#fb7185;text-decoration:underline">${lastPart}</span>`;
+                    } else {
+                        logoText.textContent = settings.school_name;
+                    }
                 }
             }
         }

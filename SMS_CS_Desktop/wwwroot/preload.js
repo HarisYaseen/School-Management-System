@@ -161,32 +161,5 @@ contextBridge.exposeInMainWorld('api', {
     getDocumentUrl: (fileName) => ipcRenderer.invoke('get-document-url', fileName),
     deleteDocument: (id) => ipcRenderer.invoke('delete-document', id),
     openDocument: (fileName) => ipcRenderer.invoke('open-doc-now', fileName),
-    getSessionOverview: (id) => ipcRenderer.invoke('get-session-overview', id),
-    openUrl: (url) => ipcRenderer.send('open-url', url),
-    
-    getDiaryEntries: () => ipcRenderer.invoke('get-diary'),
-    createDiaryEntry: (data) => ipcRenderer.invoke('create-diary', data),
-    deleteDiaryEntry: (id) => ipcRenderer.invoke('delete-diary', id),
-    
-    getDailyCollection: (date) => ipcRenderer.invoke('get-daily-collection', date),
-    getDbPath: () => ipcRenderer.invoke('get-db-path'),
-
-    // Payroll
-    getPayroll: (filters) => ipcRenderer.invoke('get-payroll', filters),
-    paySalary: (data) => ipcRenderer.invoke('pay-salary', data),
-    deleteSalaryPayment: (id) => ipcRenderer.invoke('delete-salary-payment', id),
-
-    // Staff Attendance
-    getStaffAttendance: (date) => ipcRenderer.invoke('get-staff-attendance', date),
-    markStaffAttendance: (data) => ipcRenderer.invoke('mark-staff-attendance', data),
-
-    // Calendar
-    getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
-    saveCalendarEvent: (data) => ipcRenderer.invoke('save-calendar-event', data),
-    deleteCalendarEvent: (id) => ipcRenderer.invoke('delete-calendar-event', id),
-
-    generateTransportFees: (month) => ipcRenderer.invoke('generate-transport-fees', month),
-    getClassStrength: () => ipcRenderer.invoke('get-class-strength'),
-    getSiblings: (familyNo) => ipcRenderer.invoke('get-siblings', familyNo),
-    applyLateFine: (data) => ipcRenderer.invoke('apply-late-fine', data)
+    getSessionOverview: (id) => ipcRenderer.invoke('get-session-overview', id)
 });

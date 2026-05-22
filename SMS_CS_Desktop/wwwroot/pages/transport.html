@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - Transport Management</title>
     <script src="tailwind.js"></script>
-    <script src="fa.js"></script>
+    
     
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -34,13 +34,7 @@
                         <div class="bg-white rounded-[3rem] p-10 shadow-sm border-2 border-prime/5">
                             <div class="flex justify-between items-center mb-8">
                                 <h3 class="text-xl font-black text-slate-800">Assigned Students</h3>
-                                <div class="flex gap-2">
-                                    <select id="bill-month" class="premium-input bg-slate-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-0">
-                                        <!-- Months populated -->
-                                    </select>
-                                    <button onclick="generateBilling()" class="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20">Generate Billing</button>
-                                    <button onclick="openAssignModal()" class="bg-prime text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all shadow-xl shadow-prime/20">Assign Student</button>
-                                </div>
+                                <button onclick="openAssignModal()" class="bg-prime text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-xl shadow-prime/20">Assign Student</button>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full">
@@ -161,29 +155,6 @@
 
             // Populate route dropdown
             document.getElementById('s-route').innerHTML = routes.map(r => `<option value="${r.id}">${r.name} (${formatCurrency(r.fee)})</option>`).join('');
-
-            // Populate billing month
-            const mSelect = document.getElementById('bill-month');
-            if (!mSelect.options.length) {
-                const months = [];
-                for(let i=0; i<3; i++) {
-                    const d = new Date(); d.setMonth(d.getMonth() - i);
-                    months.push(d.toLocaleString('default', { month: 'long', year: 'numeric' }));
-                }
-                mSelect.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-            }
-        }
-
-        async function generateBilling() {
-            const month = document.getElementById('bill-month').value;
-            if (confirm(`Generate transport fees for all assigned students for ${month}?`)) {
-                const res = await window.api.generateTransportFees(month);
-                if (res.success) {
-                    showToast(`Successfully generated ${res.count} transport fee records.`);
-                } else {
-                    showToast(res.error, 'error');
-                }
-            }
         }
 
         function openRouteModal() {

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Staff Management (HR)</title>
+    <script src="tailwind.js"></script>
+    
+    
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-[1400px] mx-auto">
+                <div class="flex justify-between items-center mb-10">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 tracking-tight">Staff Directory</h3>
+                        <p class="text-sm text-slate-400 font-medium mt-1">Manage employees, teachers, and school staff.</p>
+                    </div>
+                    <button onclick="openStaffModal()" class="bg-prime text-white px-8 py-4 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-slate-700 transition-all shadow-xl shadow-prime/20">
+                        <i class="fa-solid fa-user-plus"></i> Hire New Staff
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-[3rem] shadow-sm border-2 border-prime/10 overflow-hidden relative">
+                    <i class="fa-solid fa-user-tie absolute -right-8 -top-8 text-9xl text-prime/5 -rotate-12 pointer-events-none"></i>
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Employee</th>
+                                <th class="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Designation</th>
+                                <th class="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Contact</th>
+                                <th class="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Salary</th>
+                                <th class="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Status</th>
+                                <th class="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-table" class="divide-y divide-slate-50">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Staff Modal -->
+    <div id="staff-modal" class="modal-overlay hidden">
+        <div class="modal-box max-w-4xl">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-xl font-black text-slate-800" id="staff-modal-title">Hire New Staff</h3>
+                <button onclick="closeModal('staff-modal')" class="w-10 h-10 rounded-xl hover:bg-slate-100 text-slate-400 transition-colors flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <form onsubmit="saveStaff(event)" class="grid grid-cols-2 gap-6">
+                <input type="hidden" id="st-id">
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Full Name *</label>
+                    <input type="text" id="st-name" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold" required>
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Father/Husband Name</label>
+                    <input type="text" id="st-father" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Designation *</label>
+                    <input type="text" id="st-designation" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold" placeholder="e.g., Senior Teacher" required>
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Basic Salary *</label>
+                    <input type="number" id="st-salary" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold" required>
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Contact Number *</label>
+                    <input type="text" id="st-contact" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold" required>
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">CNIC / ID Card</label>
+                    <input type="text" id="st-cnic" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Address</label>
+                    <textarea id="st-address" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold h-20"></textarea>
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Hire Date</label>
+                    <input type="date" id="st-hire-date" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Qualification</label>
+                    <input type="text" id="st-edu" class="premium-input bg-slate-50 w-full px-5 py-3 rounded-2xl text-sm font-bold">
+                </div>
+                
+                <div class="col-span-2 mt-6">
+                    <button type="submit" class="w-full bg-prime text-white py-5 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-2xl shadow-prime/30">Save Staff Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('staff');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Staff Management (HR)');
+
+        async function load() {
+            const staff = await window.api.getStaff();
+            const tbody = document.getElementById('staff-table');
+            
+            tbody.innerHTML = staff.map(s => `
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-8 py-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-prime/5 text-prime flex items-center justify-center font-black">${s.name.charAt(0)}</div>
+                            <div>
+                                <p class="text-sm font-black text-slate-800">${s.name}</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase">ID: ${s.uuid.split('_')[1]}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-5 text-xs font-bold text-slate-600">${s.designation || '—'}</td>
+                    <td class="px-8 py-5 text-xs font-bold text-slate-500">${s.contact || '—'}</td>
+                    <td class="px-8 py-5 text-xs font-black text-prime">${formatCurrency(s.basic_salary)}</td>
+                    <td class="px-8 py-5">
+                        <span class="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${s.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}">${s.status}</span>
+                    </td>
+                    <td class="px-8 py-5">
+                        <div class="flex gap-2">
+                            <button onclick="editStaff(${s.id})" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-prime hover:text-white transition-all flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteStaff(${s.id})" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" class="text-center py-20 text-slate-300 font-bold">No staff records found.</td></tr>';
+        }
+
+        function openStaffModal() {
+            document.getElementById('st-id').value = '';
+            document.getElementById('st-name').value = '';
+            document.getElementById('st-father').value = '';
+            document.getElementById('st-designation').value = '';
+            document.getElementById('st-salary').value = '';
+            document.getElementById('st-contact').value = '';
+            document.getElementById('st-cnic').value = '';
+            document.getElementById('st-address').value = '';
+            document.getElementById('st-hire-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('st-edu').value = '';
+            document.getElementById('staff-modal-title').textContent = 'Hire New Staff';
+            openModal('staff-modal');
+        }
+
+        async function editStaff(id) {
+            const staff = await window.api.getStaff();
+            const s = staff.find(x => x.id === id);
+            if (!s) return;
+
+            document.getElementById('st-id').value = s.id;
+            document.getElementById('st-name').value = s.name;
+            document.getElementById('st-father').value = s.father_name || '';
+            document.getElementById('st-designation').value = s.designation || '';
+            document.getElementById('st-salary').value = s.basic_salary || '';
+            document.getElementById('st-contact').value = s.contact || '';
+            document.getElementById('st-cnic').value = s.cnic || '';
+            document.getElementById('st-address').value = s.address || '';
+            document.getElementById('st-hire-date').value = s.hire_date || '';
+            document.getElementById('st-edu').value = s.qualification || '';
+            document.getElementById('staff-modal-title').textContent = 'Edit Staff Member';
+            openModal('staff-modal');
+        }
+
+        async function saveStaff(e) {
+            e.preventDefault();
+            const id = document.getElementById('st-id').value;
+            const data = {
+                name: document.getElementById('st-name').value,
+                father_name: document.getElementById('st-father').value,
+                designation: document.getElementById('st-designation').value,
+                basic_salary: document.getElementById('st-salary').value,
+                contact: document.getElementById('st-contact').value,
+                cnic: document.getElementById('st-cnic').value,
+                address: document.getElementById('st-address').value,
+                hire_date: document.getElementById('st-hire-date').value,
+                qualification: document.getElementById('st-edu').value
+            };
+
+            const res = id ? await window.api.updateStaff({...data, id}) : await window.api.createStaff(data);
+            if (res.success) {
+                showToast(id ? 'Staff updated.' : 'Staff hired successfully!');
+                closeModal('staff-modal');
+                load();
+            } else {
+                showToast('Failed to save staff record.', 'error');
+            }
+        }
+
+        async function deleteStaff(id) {
+            if (!confirm('Are you sure you want to delete this staff record? This will soft-delete them from active lists.')) return;
+            const res = await window.api.deleteStaff(id);
+            if (res.success) {
+                showToast('Staff record deleted.');
+                load();
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

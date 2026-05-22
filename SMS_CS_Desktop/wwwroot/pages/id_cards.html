@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMS Connect - ID Card Printing</title>
     <script src="tailwind.js"></script>
-    <script src="fa.js"></script>
+    
     
     <link rel="stylesheet" href="layout.css">
     <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
@@ -78,41 +78,27 @@
             if (type === 'student') {
                 const classId = document.getElementById('student-class').value;
                 const students = await window.api.getStudents();
-                items = await Promise.all(students.filter(s => s.class_id == classId && s.status === 'active').map(async s => {
-                    let picUrl = null;
-                    if (s.picture) {
-                        const res = await window.api.getStudentPictureUrl(s.picture);
-                        if (res && res.success) picUrl = res.url;
-                    }
-                    return {
-                        name: s.name,
-                        sub: `Class: ${s.class_name || 'N/A'}`,
-                        id_label: 'Roll No',
-                        id_val: s.roll_no,
-                        guardian: s.guardian_name,
-                        contact: s.contact_number,
-                        picture: picUrl,
-                        color: '#1e293b'
-                    };
+                items = students.filter(s => s.class_id == classId && s.status === 'active').map(s => ({
+                    name: s.name,
+                    sub: `Class: ${s.class_name}`,
+                    id_label: 'Roll No',
+                    id_val: s.roll_no,
+                    guardian: s.guardian_name,
+                    contact: s.contact_number,
+                    picture: s.picture ? s.picture : null,
+                    color: '#1e293b'
                 }));
             } else {
                 const staff = await window.api.getStaff();
-                items = await Promise.all(staff.map(async s => {
-                    let picUrl = null;
-                    if (s.picture) {
-                        const res = await window.api.getStudentPictureUrl(s.picture);
-                        if (res && res.success) picUrl = res.url;
-                    }
-                    return {
-                        name: s.name,
-                        sub: s.designation || 'Staff',
-                        id_label: 'Staff ID',
-                        id_val: s.uuid ? s.uuid.split('_')[1]?.toUpperCase() || 'ID' : 'ID',
-                        guardian: s.father_name,
-                        contact: s.contact,
-                        picture: picUrl,
-                        color: '#059669'
-                    };
+                items = staff.map(s => ({
+                    name: s.name,
+                    sub: s.designation || 'Staff',
+                    id_label: 'Staff ID',
+                    id_val: s.uuid.split('_')[1].toUpperCase(),
+                    guardian: s.father_name,
+                    contact: s.contact,
+                    picture: s.picture,
+                    color: '#059669'
                 }));
             }
 

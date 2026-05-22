@@ -10,7 +10,7 @@ ipcMain.handle('upload-student-document', async (e, { studentId, title }) => {
     try {
         const { dialog } = require('electron');
         const win = require('electron').BrowserWindow.getFocusedWindow();
-        const result = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Documents', extensions: ['jpg', 'png', 'jpeg', 'pdf', 'docx'] }] });
+        const result = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Documents', extensions: ['jpg','png','jpeg','pdf','docx'] }] });
         if (result.canceled || result.filePaths.length === 0) return { success: false };
         const sourcePath = result.filePaths[0];
         const extension = require('path').extname(sourcePath);
@@ -21,7 +21,7 @@ ipcMain.handle('upload-student-document', async (e, { studentId, title }) => {
         db.run('INSERT INTO student_documents (student_id, title, file_name, file_type) VALUES (?,?,?,?)', [studentId, title, fileName, extension]);
         saveDB();
         return { success: true };
-    } catch (err) { return { success: false, error: err.message }; }
+    } catch(err) { return { success: false, error: err.message }; }
 });
 ipcMain.handle('get-document-url', (e, fileName) => {
     const filePath = require('path').join(app.getPath('userData'), 'student_documents', fileName);
@@ -35,8 +35,6 @@ ipcMain.handle('delete-document', (e, id) => {
     }
     return run('DELETE FROM student_documents WHERE id=?', [id]);
 });
-// ========================= STUDENT BIODATA =========================
-
 ipcMain.handle('open-doc-now', (e, fileName) => {
     const filePath = require('path').join(app.getPath('userData'), 'student_documents', fileName);
     if (fs.existsSync(filePath)) {
@@ -45,12 +43,6 @@ ipcMain.handle('open-doc-now', (e, fileName) => {
     }
     return { success: false, error: 'File not found.' };
 });
-
-ipcMain.on('open-url', (e, url) => {
-    shell.openExternal(url);
-});
-
-ipcMain.handle('get-db-path', () => require('path').join(app.getPath('userData'), 'database.sqlite'));
 
 let db;
 
@@ -141,11 +133,6 @@ function ensureTables() {
     db.run(`CREATE TABLE IF NOT EXISTS timetable (id INTEGER PRIMARY KEY AUTOINCREMENT, class_id INTEGER NOT NULL, day TEXT NOT NULL, period_no INTEGER, subject TEXT, teacher TEXT, start_time TEXT, end_time TEXT, created_at TEXT DEFAULT (datetime('now')));`);
     db.run(`CREATE TABLE IF NOT EXISTS reminders (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, title TEXT NOT NULL, description TEXT, reminder_date TEXT, priority TEXT DEFAULT 'medium', is_done INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')));`);
     db.run(`CREATE TABLE IF NOT EXISTS student_documents (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id INTEGER NOT NULL, title TEXT NOT NULL, file_name TEXT NOT NULL, file_type TEXT, created_at TEXT DEFAULT (datetime('now')));`);
-    db.run(`CREATE TABLE IF NOT EXISTS diary (id INTEGER PRIMARY KEY AUTOINCREMENT, class_id INTEGER NOT NULL, subject TEXT, entry_date TEXT, content TEXT, created_at TEXT DEFAULT (datetime('now')));`);
-    db.run(`CREATE TABLE IF NOT EXISTS salary_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id INTEGER NOT NULL, month TEXT NOT NULL, basic_salary REAL DEFAULT 0, allowance REAL DEFAULT 0, deduction REAL DEFAULT 0, net_paid REAL DEFAULT 0, payment_date TEXT, method TEXT, notes TEXT, created_at TEXT DEFAULT (datetime('now')));`);
-    db.run(`CREATE TABLE IF NOT EXISTS staff_attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id INTEGER NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL, notes TEXT, created_at TEXT DEFAULT (datetime('now')));`);
-    db.run(`CREATE TABLE IF NOT EXISTS staff_leaves (id INTEGER PRIMARY KEY AUTOINCREMENT, staff_id INTEGER NOT NULL, leave_type TEXT, start_date TEXT, end_date TEXT, status TEXT DEFAULT 'pending', reason TEXT, created_at TEXT DEFAULT (datetime('now')));`);
-    db.run(`CREATE TABLE IF NOT EXISTS holiday_calendar (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT, type TEXT DEFAULT 'holiday', description TEXT, created_at TEXT DEFAULT (datetime('now')));`);
 
     // 2. Run Migrations
     const currentVersion = queryOne("SELECT MAX(version) as v FROM schema_migrations")?.v || 0;
@@ -165,18 +152,18 @@ function ensureTables() {
         logInfo("Running Migration v3: Integrity Check...");
         try {
             // These are idempotent column additions for broken v2 states
-            try { db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'staff';"); } catch (e) { }
-            try { db.run("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '[]';"); } catch (e) { }
-            try { db.run("ALTER TABLE students ADD COLUMN family_no TEXT;"); } catch (e) { }
-            try { db.run("ALTER TABLE students ADD COLUMN session_id INTEGER;"); } catch (e) { }
-            try { db.run("ALTER TABLE students ADD COLUMN blood_group TEXT;"); } catch (e) { }
-            try { db.run("ALTER TABLE students ADD COLUMN dob TEXT;"); } catch (e) { }
-            try { db.run("ALTER TABLE students ADD COLUMN religion TEXT DEFAULT 'Islam';"); } catch (e) { }
-            try { db.run("ALTER TABLE students ADD COLUMN address TEXT;"); } catch (e) { }
-            try { db.run("ALTER TABLE sessions ADD COLUMN uuid TEXT;"); } catch (e) { }
-            try { db.run("ALTER TABLE sessions ADD COLUMN start_year INTEGER;"); } catch (e) { }
-            try { db.run("ALTER TABLE sessions ADD COLUMN end_year INTEGER;"); } catch (e) { }
-            try { db.run("ALTER TABLE sessions ADD COLUMN is_active INTEGER DEFAULT 0;"); } catch (e) { }
+            try { db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'staff';"); } catch(e){}
+            try { db.run("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '[]';"); } catch(e){}
+            try { db.run("ALTER TABLE students ADD COLUMN family_no TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE students ADD COLUMN session_id INTEGER;"); } catch(e){}
+            try { db.run("ALTER TABLE students ADD COLUMN blood_group TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE students ADD COLUMN dob TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE students ADD COLUMN religion TEXT DEFAULT 'Islam';"); } catch(e){}
+            try { db.run("ALTER TABLE students ADD COLUMN address TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE sessions ADD COLUMN uuid TEXT;"); } catch(e){}
+            try { db.run("ALTER TABLE sessions ADD COLUMN start_year INTEGER;"); } catch(e){}
+            try { db.run("ALTER TABLE sessions ADD COLUMN end_year INTEGER;"); } catch(e){}
+            try { db.run("ALTER TABLE sessions ADD COLUMN is_active INTEGER DEFAULT 0;"); } catch(e){}
         } catch (e) { logError("Migration v3 failed", e); }
         db.run("INSERT INTO schema_migrations (version) VALUES (3);");
     }
@@ -187,7 +174,7 @@ function ensureTables() {
             // Recreate table properly
             db.run("DROP TABLE IF EXISTS sessions;");
             db.run(`CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, name TEXT NOT NULL, start_year INTEGER, end_year INTEGER, is_active INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')));`);
-            db.run("INSERT INTO sessions (uuid, name, start_year, end_year, is_active) VALUES (?,?,?,?,?)",
+            db.run("INSERT INTO sessions (uuid, name, start_year, end_year, is_active) VALUES (?,?,?,?,?)", 
                 [require('crypto').randomUUID(), 'Session 2024-25', 2024, 2025, 1]);
             db.run("INSERT INTO schema_migrations (version) VALUES (4);");
         } catch (e) { logError("Migration v4 failed", e); }
@@ -199,7 +186,7 @@ function ensureTables() {
             // Force recreation again to be absolutely sure
             db.run("DROP TABLE IF EXISTS sessions;");
             db.run(`CREATE TABLE sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, name TEXT NOT NULL, start_year INTEGER, end_year INTEGER, is_active INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')));`);
-            db.run("INSERT INTO sessions (id, uuid, name, start_year, end_year, is_active) VALUES (NULL, ?,?,?,?,?)",
+            db.run("INSERT INTO sessions (id, uuid, name, start_year, end_year, is_active) VALUES (NULL, ?,?,?,?,?)", 
                 [require('crypto').randomUUID(), 'Session 2024-25', 2024, 2025, 1]);
             db.run("INSERT INTO schema_migrations (version) VALUES (5);");
         } catch (e) { logError("Migration v5 failed", e); }
@@ -396,7 +383,6 @@ ipcMain.handle('create-backup', async () => {
 
 // Auto-Updater Professional Handling
 const { autoUpdater } = require('electron-updater');
-/*
 autoUpdater.on('update-available', () => {
     logInfo('Update available. Starting download...');
     BrowserWindow.getAllWindows().forEach(w => w.webContents.send('update-status', 'Downloading update...'));
@@ -415,13 +401,10 @@ autoUpdater.on('update-downloaded', () => {
 ipcMain.handle('quit-and-install', () => {
     autoUpdater.quitAndInstall();
 });
-*/
 
 ipcMain.handle('get-version', () => app.getVersion());
 
 ipcMain.handle('check-updates', async () => {
-    return { success: true, message: 'Update check is currently disabled.' };
-    /*
     try {
         const { autoUpdater } = require('electron-updater');
         autoUpdater.autoDownload = true;
@@ -435,7 +418,6 @@ ipcMain.handle('check-updates', async () => {
         logError('Update check failed', err);
         return { success: false, message: 'Could not check for updates. ' + (err.message || '') };
     }
-    */
 });
 
 ipcMain.handle('upload-student-picture', async () => {
@@ -544,40 +526,40 @@ ipcMain.handle('get-students', () => queryAll('SELECT s.*, c.name as class_name 
 ipcMain.handle('get-student', (e, id) => queryOne('SELECT s.*, c.name as class_name FROM students s LEFT JOIN class_infos c ON s.class_id = c.id WHERE s.id = ?', [id]));
 ipcMain.handle('create-student', (e, d) => {
     try {
+        db.run('BEGIN TRANSACTION');
         const uuid = Date.now().toString(36) + Math.random().toString(36).substr(2);
         const rollNo = String(d.roll_no).trim();
 
-        // Check for existing roll number
+        // Check for existing roll number before insert
         const existing = queryOne('SELECT id FROM students WHERE roll_no = ?', [rollNo]);
         if (existing) throw new Error(`Roll Number ${rollNo} already exists!`);
 
-        // Use the 'run' helper for persistence
-        const sRes = run('INSERT INTO students (uuid, name, roll_no, class_id, guardian_name, contact_number, monthly_fee, admission_fee, picture, gender, concession) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        db.run('INSERT INTO students (uuid, name, roll_no, class_id, guardian_name, contact_number, monthly_fee, admission_fee, picture, gender, concession) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
             [uuid, d.name, rollNo, d.class_id, d.guardian_name, d.contact_number, roundMoney(d.monthly_fee || 0), roundMoney(d.admission_fee || 0), d.picture || null, d.gender || 'Male', roundMoney(d.concession || 0)]);
 
-        if (!sRes.success) throw new Error(sRes.error);
-        const studentId = sRes.id;
+        const student = queryOne('SELECT id FROM students WHERE uuid = ?', [uuid]);
+        if (student) {
+            const studentId = student.id;
+            const adm = roundMoney(d.admission_fee || 0);
+            const tut = roundMoney(d.monthly_fee || 0);
+            const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
-        const adm = roundMoney(d.admission_fee || 0);
-        const tut = roundMoney(d.monthly_fee || 0);
-        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-
-        if (adm > 0) {
-            const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))',
-                [uid, studentId, adm, adm, 0, 'unpaid', 'Admission Fee', 'admission', currentMonth]);
+            if (adm > 0) {
+                const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                db.run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))', [uid, studentId, adm, adm, 0, 'unpaid', 'Admission Fee', 'admission', currentMonth]);
+            }
+            if (tut > 0) {
+                const concession = roundMoney(d.concession || 0);
+                const netTut = roundMoney(Math.max(0, tut - concession));
+                const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                db.run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))', [uid, studentId, netTut, netTut, 0, 'unpaid', `Monthly Tuition Fee${concession > 0 ? ' (After Concession)' : ''}`, 'tuition', currentMonth]);
+            }
         }
-        if (tut > 0) {
-            const concession = roundMoney(d.concession || 0);
-            const netTut = roundMoney(Math.max(0, tut - concession));
-            const uid = 'fee_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            run('INSERT INTO fees (uuid, student_id, amount, debit, credit, status, description, type, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now", "localtime"))',
-                [uid, studentId, netTut, netTut, 0, 'unpaid', `Monthly Tuition Fee${concession > 0 ? ' (After Concession)' : ''}`, 'tuition', currentMonth]);
-        }
-
+        db.run('COMMIT');
         saveDB();
         return { success: true };
     } catch (err) {
+        db.run('ROLLBACK');
         logError('create-student failed', err);
         return { success: false, error: err.message };
     }
@@ -1011,28 +993,13 @@ ipcMain.handle('get-bank-stats', (e, period = 'all') => {
         const posSales = queryOne(`SELECT SUM(total_amount) as s FROM sales ${salesWhere}`)?.s || 0;
         const costOfSoldItems = queryOne(`SELECT SUM(s.qty * i.purchase_price) as s FROM sales s LEFT JOIN inventories i ON s.inventory_id = i.id ${salesWhere.replace('WHERE', 'WHERE s.')}`)?.s || 0;
 
-        let salaryWhere = "";
-        if (period === 'daily') {
-            salaryWhere = " WHERE date(payment_date) = date('now', 'localtime')";
-        } else if (period === 'weekly') {
-            salaryWhere = " WHERE date(payment_date) >= date('now', 'localtime', '-7 days')";
-        } else if (period === 'monthly') {
-            salaryWhere = " WHERE date(payment_date) >= date('now', 'localtime', '-30 days')";
-        } else if (period === 'annually') {
-            salaryWhere = " WHERE strftime('%Y', payment_date) = strftime('%Y', 'now', 'localtime')";
-        }
-
-        const salaries = queryOne(`SELECT SUM(net_paid) as s FROM salary_payments ${salaryWhere}`)?.s || 0;
         const totalPurchases = queryOne(`SELECT SUM(qty * purchase_price) as s FROM inventories ${invWhere}`)?.s || 0;
 
         const posProfit = posSales - costOfSoldItems;
-        const expenses = (queryOne(`SELECT SUM(amount) as s FROM expenses ${expWhere}`)?.s || 0) + salaries;
+        const expenses = queryOne(`SELECT SUM(amount) as s FROM expenses ${expWhere}`)?.s || 0;
 
-        // Net Balance/Profit = Sum of all bank accounts if banks exist, otherwise default to ledger
-        const bankCount = queryOne("SELECT COUNT(*) as c FROM banks")?.c || 0;
-        const netBalance = bankCount > 0
-            ? (queryOne("SELECT SUM(balance) as s FROM banks")?.s || 0)
-            : (tuition + admission + posSales) - expenses;
+        // Net Balance/Profit = (Total Income) - Expenses - Cost of Sold Items
+        const netBalance = (tuition + admission + posSales) - expenses - costOfSoldItems;
 
         return { tuition, admission, posSales, posProfit, totalPurchases, expenses, netBalance };
     } catch (e) { console.error('Bank stats error:', e.message); return { tuition: 0, admission: 0, posSales: 0, posProfit: 0, totalPurchases: 0, expenses: 0, netBalance: 0 }; }
@@ -1152,7 +1119,7 @@ ipcMain.handle('get-student-biodata', (e, studentId) => {
             totalDebit: roundMoney(totalDebit), totalCredit: roundMoney(totalCredit), balance,
             ledger, examResults, siblings
         };
-    } catch (e) { logError('get-student-biodata failed', e); return null; }
+    } catch(e) { logError('get-student-biodata failed', e); return null; }
 });
 
 // ========================= WITHDRAWAL & STRUCK-OFF =========================
@@ -1164,7 +1131,7 @@ ipcMain.handle('withdraw-student', (e, { id, reason, date }) => {
         db.run('COMMIT');
         saveDB();
         return { success: true };
-    } catch (err) { db.run('ROLLBACK'); return { success: false, error: err.message }; }
+    } catch(err) { db.run('ROLLBACK'); return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('struck-off-student', (e, { id, reason, date }) => {
@@ -1175,7 +1142,7 @@ ipcMain.handle('struck-off-student', (e, { id, reason, date }) => {
         db.run('COMMIT');
         saveDB();
         return { success: true };
-    } catch (err) { db.run('ROLLBACK'); return { success: false, error: err.message }; }
+    } catch(err) { db.run('ROLLBACK'); return { success: false, error: err.message }; }
 });
 
 ipcMain.handle('get-withdrawn-students', () => {
@@ -1203,7 +1170,7 @@ ipcMain.handle('set-active-session', (e, id) => {
         db.run('COMMIT');
         saveDB();
         return { success: true };
-    } catch (err) { db.run('ROLLBACK'); return { success: false, error: err.message }; }
+    } catch(err) { db.run('ROLLBACK'); return { success: false, error: err.message }; }
 });
 ipcMain.handle('delete-session', (e, id) => run('DELETE FROM sessions WHERE id=?', [id]));
 ipcMain.handle('get-active-session', () => {
@@ -1217,7 +1184,7 @@ ipcMain.handle('get-session-overview', (e, sessionId) => {
             classCount: queryOne('SELECT COUNT(DISTINCT class_id) as c FROM students WHERE session_id = ?', [sessionId])?.c || 0,
         };
         return stats;
-    } catch (err) { return { totalStudents: 0, totalRevenue: 0, classCount: 0 }; }
+    } catch(err) { return { totalStudents: 0, totalRevenue: 0, classCount: 0 }; }
 });
 
 // ========================= USER MANAGEMENT =========================
@@ -1253,9 +1220,9 @@ ipcMain.handle('delete-user', (e, id) => {
 ipcMain.handle('get-transport-routes', () => queryAll('SELECT * FROM transport_routes ORDER BY name'));
 ipcMain.handle('create-transport-route', (e, d) => {
     const uid = 'tr_' + Date.now().toString(36);
-    return run('INSERT INTO transport_routes (uuid, name, fee, description) VALUES (?,?,?,?)', [uid, d.name, Number(d.fee) || 0, d.description || '']);
+    return run('INSERT INTO transport_routes (uuid, name, fee, description) VALUES (?,?,?,?)', [uid, d.name, Number(d.fee)||0, d.description||'']);
 });
-ipcMain.handle('update-transport-route', (e, d) => run('UPDATE transport_routes SET name=?, fee=?, description=? WHERE id=?', [d.name, Number(d.fee) || 0, d.description || '', d.id]));
+ipcMain.handle('update-transport-route', (e, d) => run('UPDATE transport_routes SET name=?, fee=?, description=? WHERE id=?', [d.name, Number(d.fee)||0, d.description||'', d.id]));
 ipcMain.handle('delete-transport-route', (e, id) => run('DELETE FROM transport_routes WHERE id=?', [id]));
 
 ipcMain.handle('get-student-transport', (e, studentId) => queryOne('SELECT st.*, tr.name as route_name, tr.fee FROM student_transport st LEFT JOIN transport_routes tr ON st.route_id = tr.id WHERE st.student_id = ?', [studentId]));
@@ -1284,18 +1251,18 @@ ipcMain.handle('create-staff', (e, d) => {
     const uid = 'stf_' + Date.now().toString(36);
     return run(`INSERT INTO staff (uuid, name, father_name, cnic, dob, gender, contact, email, address, department, designation, qualification, joining_date, salary, status, picture)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [uid, d.name, d.father_name || '', d.cnic || '', d.dob || '', d.gender || 'Male', d.contact || '', d.email || '', d.address || '', d.department || 'General', d.designation || '', d.qualification || '', d.joining_date || '', Number(d.salary) || 0, 'active', d.picture || null]);
+        [uid, d.name, d.father_name||'', d.cnic||'', d.dob||'', d.gender||'Male', d.contact||'', d.email||'', d.address||'', d.department||'General', d.designation||'', d.qualification||'', d.joining_date||'', Number(d.salary)||0, 'active', d.picture||null]);
 });
 ipcMain.handle('update-staff', (e, d) => {
     return run(`UPDATE staff SET name=?, father_name=?, cnic=?, dob=?, gender=?, contact=?, email=?, address=?, department=?, designation=?, qualification=?, joining_date=?, salary=?, status=?, picture=? WHERE id=?`,
-        [d.name, d.father_name || '', d.cnic || '', d.dob || '', d.gender || 'Male', d.contact || '', d.email || '', d.address || '', d.department || 'General', d.designation || '', d.qualification || '', d.joining_date || '', Number(d.salary) || 0, d.status || 'active', d.picture || null, d.id]);
+        [d.name, d.father_name||'', d.cnic||'', d.dob||'', d.gender||'Male', d.contact||'', d.email||'', d.address||'', d.department||'General', d.designation||'', d.qualification||'', d.joining_date||'', Number(d.salary)||0, d.status||'active', d.picture||null, d.id]);
 });
 ipcMain.handle('delete-staff', (e, id) => run('DELETE FROM staff WHERE id=?', [id]));
 ipcMain.handle('upload-staff-picture', async () => {
     try {
         const { dialog } = require('electron');
         const win = require('electron').BrowserWindow.getFocusedWindow();
-        const result = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Images', extensions: ['jpg', 'png', 'jpeg', 'webp'] }] });
+        const result = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Images', extensions: ['jpg','png','jpeg','webp'] }] });
         if (result.canceled || result.filePaths.length === 0) return null;
         const sourcePath = result.filePaths[0];
         const extension = require('path').extname(sourcePath);
@@ -1304,7 +1271,7 @@ ipcMain.handle('upload-staff-picture', async () => {
         if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
         fs.copyFileSync(sourcePath, require('path').join(targetDir, fileName));
         return fileName;
-    } catch (err) { return { error: err.message }; }
+    } catch(err) { return { error: err.message }; }
 });
 ipcMain.handle('get-staff-picture-url', (e, fileName) => {
     if (!fileName) return null;
@@ -1322,9 +1289,9 @@ ipcMain.handle('get-timetable', (e, { classId, day }) => {
 });
 ipcMain.handle('save-timetable-entry', (e, d) => {
     if (d.id) return run('UPDATE timetable SET class_id=?, day=?, period_no=?, subject=?, teacher=?, start_time=?, end_time=? WHERE id=?',
-        [d.class_id, d.day, d.period_no, d.subject, d.teacher || '', d.start_time, d.end_time, d.id]);
+        [d.class_id, d.day, d.period_no, d.subject, d.teacher||'', d.start_time, d.end_time, d.id]);
     return run('INSERT INTO timetable (class_id, day, period_no, subject, teacher, start_time, end_time) VALUES (?,?,?,?,?,?,?)',
-        [d.class_id, d.day, d.period_no, d.subject, d.teacher || '', d.start_time, d.end_time]);
+        [d.class_id, d.day, d.period_no, d.subject, d.teacher||'', d.start_time, d.end_time]);
 });
 ipcMain.handle('delete-timetable-entry', (e, id) => run('DELETE FROM timetable WHERE id=?', [id]));
 
@@ -1333,11 +1300,11 @@ ipcMain.handle('get-reminders', () => queryAll('SELECT * FROM reminders ORDER BY
 ipcMain.handle('create-reminder', (e, d) => {
     const uid = 'rem_' + Date.now().toString(36);
     return run('INSERT INTO reminders (uuid, title, description, reminder_date, priority, is_done) VALUES (?,?,?,?,?,0)',
-        [uid, d.title, d.description || '', d.reminder_date, d.priority || 'medium']);
+        [uid, d.title, d.description||'', d.reminder_date, d.priority||'medium']);
 });
 ipcMain.handle('toggle-reminder', (e, id) => run('UPDATE reminders SET is_done = CASE WHEN is_done=1 THEN 0 ELSE 1 END WHERE id=?', [id]));
 ipcMain.handle('delete-reminder', (e, id) => run('DELETE FROM reminders WHERE id=?', [id]));
-ipcMain.handle('update-reminder', (e, d) => run('UPDATE reminders SET title=?, description=?, reminder_date=?, priority=? WHERE id=?', [d.title, d.description || '', d.reminder_date, d.priority || 'medium', d.id]));
+ipcMain.handle('update-reminder', (e, d) => run('UPDATE reminders SET title=?, description=?, reminder_date=?, priority=? WHERE id=?', [d.title, d.description||'', d.reminder_date, d.priority||'medium', d.id]));
 
 // ========================= REPORTS =========================
 ipcMain.handle('get-report', (e, { type, filters }) => {
@@ -1351,7 +1318,7 @@ ipcMain.handle('get-report', (e, { type, filters }) => {
         if (bloodGroup) { sql += ' AND s.blood_group = ?'; params.push(bloodGroup); }
         sql += ' ORDER BY c.name, s.name';
         return queryAll(sql, params);
-    } catch (e) { logError('get-report failed', e); return []; }
+    } catch(e) { logError('get-report failed', e); return []; }
 });
 
 ipcMain.handle('get-fee-report', (e, { type, classId, month, year }) => {
@@ -1368,7 +1335,7 @@ ipcMain.handle('get-fee-report', (e, { type, classId, month, year }) => {
         if (month) { sql += ' AND f.month = ?'; params.push(month); }
         sql += ' GROUP BY s.id ORDER BY c.name, s.name';
         return queryAll(sql, params);
-    } catch (e) { return []; }
+    } catch(e) { return []; }
 });
 
 ipcMain.handle('get-defaulters-report', (e, { classId, minBalance }) => {
@@ -1385,147 +1352,5 @@ ipcMain.handle('get-defaulters-report', (e, { classId, minBalance }) => {
         sql += ` GROUP BY s.id HAVING balance >= ? ORDER BY balance DESC`;
         params.push(min);
         return queryAll(sql, params);
-    } catch (e) { return []; }
-});
-
-ipcMain.handle('get-diary', () => {
-    return queryAll('SELECT d.*, c.name as class_name FROM diary d LEFT JOIN class_infos c ON d.class_id = c.id ORDER BY d.entry_date DESC, d.created_at DESC');
-});
-ipcMain.handle('create-diary', (e, d) => run('INSERT INTO diary (class_id, subject, entry_date, content) VALUES (?,?,?,?)', [d.class_id, d.subject || 'Daily Diary', d.entry_date, d.content]));
-ipcMain.handle('delete-diary', (e, id) => run('DELETE FROM diary WHERE id=?', [id]));
-
-ipcMain.handle('get-daily-collection', (e, date) => {
-    try {
-        return queryAll(`
-            SELECT f.*, s.name as student_name 
-            FROM fees f 
-            LEFT JOIN students s ON f.student_id = s.id 
-            WHERE date(f.created_at, 'localtime') = ? AND f.credit > 0
-        `, [date]);
-    } catch (e) { return []; }
-});
-
-// --- PAYROLL IPC HANDLERS ---
-ipcMain.handle('get-payroll', (e, filters) => {
-    try {
-        let sql = "SELECT p.*, s.name as staff_name, s.designation, s.department FROM salary_payments p JOIN staff s ON p.staff_id = s.id WHERE 1=1";
-        let params = [];
-        if (filters?.month) { sql += " AND p.month = ?"; params.push(filters.month); }
-        if (filters?.staff_id) { sql += " AND p.staff_id = ?"; params.push(filters.staff_id); }
-        return queryAll(sql, params);
-    } catch (err) { return []; }
-});
-
-ipcMain.handle('pay-salary', (e, data) => {
-    try {
-        const sql = "INSERT INTO salary_payments (staff_id, month, basic_salary, allowance, deduction, net_paid, payment_date, method, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        run(sql, [data.staff_id, data.month, data.basic_salary, data.allowance, data.deduction, data.net_paid, data.payment_date, data.method, data.notes]);
-        return { success: true };
-    } catch (err) { return { success: false, error: err.message }; }
-});
-
-ipcMain.handle('delete-salary-payment', (e, id) => {
-    try {
-        run("DELETE FROM salary_payments WHERE id = ?", [id]);
-        return { success: true };
-    } catch (err) { return { success: false, error: err.message }; }
-});
-
-// --- STAFF ATTENDANCE IPC HANDLERS ---
-ipcMain.handle('get-staff-attendance', (e, date) => {
-    try {
-        return queryAll("SELECT a.*, s.name as staff_name FROM staff_attendance a JOIN staff s ON a.staff_id = s.id WHERE a.date = ?", [date]);
-    } catch (err) { return []; }
-});
-
-ipcMain.handle('mark-staff-attendance', (e, data) => {
-    try {
-        const existing = queryOne("SELECT id FROM staff_attendance WHERE staff_id = ? AND date = ?", [data.staff_id, data.date]);
-        if (existing) {
-            run("UPDATE staff_attendance SET status = ?, notes = ? WHERE id = ?", [data.status, data.notes, existing.id]);
-        } else {
-            run("INSERT INTO staff_attendance (staff_id, status, date, notes) VALUES (?, ?, ?, ?)", [data.staff_id, data.status, data.date, data.notes]);
-        }
-        return { success: true };
-    } catch (err) { return { success: false, error: err.message }; }
-});
-
-// --- CALENDAR IPC HANDLERS ---
-ipcMain.handle('get-calendar-events', (e) => {
-    try { return queryAll("SELECT * FROM holiday_calendar ORDER BY start_date ASC"); }
-    catch (err) { return []; }
-});
-
-ipcMain.handle('save-calendar-event', (e, data) => {
-    try {
-        if (data.id) {
-            run("UPDATE holiday_calendar SET title=?, start_date=?, end_date=?, type=?, description=? WHERE id=?", [data.title, data.start_date, data.end_date, data.type, data.description, data.id]);
-        } else {
-            run("INSERT INTO holiday_calendar (title, start_date, end_date, type, description) VALUES (?, ?, ?, ?, ?)", [data.title, data.start_date, data.end_date, data.type, data.description]);
-        }
-        return { success: true };
-    } catch (err) { return { success: false, error: err.message }; }
-});
-
-ipcMain.handle('delete-calendar-event', (e, id) => {
-    try {
-        run("DELETE FROM holiday_calendar WHERE id = ?", [id]);
-        return { success: true };
-    } catch (err) { return { success: false, error: err.message }; }
-});
-
-ipcMain.handle('generate-transport-fees', (e, month) => {
-    try {
-        const students = queryAll(`
-            SELECT st.student_id, tr.fee, tr.name as route_name 
-            FROM student_transport st 
-            JOIN transport_routes tr ON st.route_id = tr.id
-        `);
-
-        let count = 0;
-        students.forEach(s => {
-            // Check if fee already exists for this month and student
-            const exists = queryOne("SELECT id FROM fees WHERE student_id = ? AND title LIKE ?", [s.student_id, `%Transport Fee (${month})%`]);
-            if (!exists) {
-                run("INSERT INTO fees (uuid, student_id, title, amount, status, date) VALUES (?, ?, ?, ?, ?, ?)",
-                    [Math.random().toString(36).substr(2, 9), s.student_id, `Transport Fee (${month}) - ${s.route_name}`, s.fee, 'unpaid', new Date().toISOString().split('T')[0]]);
-                count++;
-            }
-        });
-        return { success: true, count };
-    } catch (err) { return { success: false, error: err.message }; }
-});
-
-ipcMain.handle('get-class-strength', (e) => {
-    try {
-        return queryAll(`
-            SELECT c.name as class_name, 
-                   COUNT(s.id) as total,
-                   SUM(CASE WHEN s.gender = 'Male' THEN 1 ELSE 0 END) as boys,
-                   SUM(CASE WHEN s.gender = 'Female' THEN 1 ELSE 0 END) as girls
-            FROM classes c
-            LEFT JOIN students s ON c.id = s.class_id AND s.status = 'active'
-            GROUP BY c.id
-        `);
-    } catch (err) { return []; }
-});
-
-ipcMain.handle('get-siblings', (e, familyNo) => {
-    try {
-        return queryAll("SELECT s.*, c.name as class_name FROM students s JOIN classes c ON s.class_id = c.id WHERE s.family_no = ? AND s.status = 'active'", [familyNo]);
-    } catch (err) { return []; }
-});
-
-ipcMain.handle('apply-late-fine', (e, { classId, amount, title }) => {
-    try {
-        const query = classId ? "SELECT id FROM students WHERE class_id = ? AND status = 'active'" : "SELECT id FROM students WHERE status = 'active'";
-        const params = classId ? [classId] : [];
-        const students = queryAll(query, params);
-
-        students.forEach(s => {
-            run("INSERT INTO fees (uuid, student_id, title, amount, status, date) VALUES (?, ?, ?, ?, ?, ?)",
-                [Math.random().toString(36).substr(2, 9), s.id, title, amount, 'unpaid', new Date().toISOString().split('T')[0]]);
-        });
-        return { success: true, count: students.length };
-    } catch (err) { return { success: false, error: err.message }; }
+    } catch(e) { return []; }
 });

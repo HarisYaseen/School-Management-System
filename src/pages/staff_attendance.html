@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Connect - Staff Attendance</title>
+    <script src="tailwind.js"></script>
+    <script src="fa.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="layout.css">
+    <script>tailwind.config = { theme: { extend: { colors: { prime: '#1e293b' }, fontFamily: { outfit: ['Outfit','sans-serif'] } } } }</script>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased h-screen flex overflow-hidden font-outfit">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <div id="topbar-container"></div>
+        <div class="flex-1 overflow-auto bg-[#F8FAFC] p-10">
+            <div class="max-w-[1200px] mx-auto">
+                <div class="flex justify-between items-center mb-10">
+                    <div>
+                        <h3 class="text-3xl font-black text-slate-800 tracking-tight">Staff Attendance</h3>
+                        <p class="text-sm text-slate-400 font-medium mt-1">Mark daily attendance for teachers and administrative staff.</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <input type="date" id="att-date" onchange="load()" class="premium-input bg-white px-6 py-3 rounded-2xl text-sm font-bold shadow-sm">
+                        <button onclick="printReport()" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-slate-200 transition-all">
+                            <i class="fa-solid fa-print"></i> Monthly Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[3rem] shadow-sm border-2 border-prime/5 overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b-2 border-slate-100">
+                            <tr>
+                                <th class="px-10 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Staff Member</th>
+                                <th class="px-6 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Designation</th>
+                                <th class="px-10 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Mark Attendance</th>
+                                <th class="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-table" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button onclick="saveAll()" class="bg-prime text-white px-12 py-5 rounded-3xl font-black text-sm hover:bg-slate-700 transition-all shadow-2xl shadow-prime/20 flex items-center gap-3">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Save Attendance Sheet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="layout.js"></script>
+    <script>
+        requireAuth();
+        document.getElementById('sidebar-container').innerHTML = buildSidebar('staff_attendance');
+        document.getElementById('topbar-container').innerHTML = buildTopbar('Staff Attendance');
+
+        let allStaff = [];
+        let attendanceData = [];
+
+        async function load() {
+            const date = document.getElementById('att-date').value || new Date().toISOString().split('T')[0];
+            document.getElementById('att-date').value = date;
+
+            const [staff, attendance] = await Promise.all([
+                window.api.getStaff(),
+                window.api.getStaffAttendance(date)
+            ]);
+
+            allStaff = staff.filter(s => s.status === 'active');
+            attendanceData = attendance;
+
+            const tbody = document.getElementById('staff-table');
+            tbody.innerHTML = allStaff.map(s => {
+                const att = attendanceData.find(a => a.staff_id === s.id);
+                const status = att ? att.status : 'present';
+                const notes = att ? att.notes : '';
+
+                return `
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="px-10 py-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-prime/5 flex items-center justify-center font-black text-prime text-xs">${s.name.charAt(0)}</div>
+                            <span class="text-sm font-black text-slate-700">${s.name}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-wider">${s.designation}</td>
+                    <td class="px-10 py-5">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="mark(${s.id}, 'present')" class="att-btn-${s.id} w-10 h-10 rounded-xl flex items-center justify-center transition-all ${status === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}" data-status="present"><i class="fa-solid fa-check"></i></button>
+                            <button onclick="mark(${s.id}, 'absent')" class="att-btn-${s.id} w-10 h-10 rounded-xl flex items-center justify-center transition-all ${status === 'absent' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}" data-status="absent"><i class="fa-solid fa-times"></i></button>
+                            <button onclick="mark(${s.id}, 'late')" class="att-btn-${s.id} w-10 h-10 rounded-xl flex items-center justify-center transition-all ${status === 'late' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}" data-status="late"><i class="fa-solid fa-clock"></i></button>
+                            <button onclick="mark(${s.id}, 'leave')" class="att-btn-${s.id} w-10 h-10 rounded-xl flex items-center justify-center transition-all ${status === 'leave' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}" data-status="leave"><i class="fa-solid fa-plane-departure"></i></button>
+                        </div>
+                    </td>
+                    <td class="px-10 py-5 text-right">
+                        <input type="text" id="note-${s.id}" class="bg-slate-50 border-0 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-500 w-48 text-right focus:ring-2 focus:ring-prime/10 transition-all" value="${notes}" placeholder="Optional note...">
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function mark(sid, status) {
+            const btns = document.querySelectorAll(`.att-btn-${sid}`);
+            btns.forEach(b => {
+                const bStatus = b.getAttribute('data-status');
+                b.className = `att-btn-${sid} w-10 h-10 rounded-xl flex items-center justify-center transition-all ${bStatus === status ? getStatusClass(status) : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`;
+            });
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'present': return 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20';
+                case 'absent': return 'bg-rose-500 text-white shadow-lg shadow-rose-500/20';
+                case 'late': return 'bg-amber-500 text-white shadow-lg shadow-amber-500/20';
+                case 'leave': return 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20';
+                default: return 'bg-slate-50 text-slate-400';
+            }
+        }
+
+        async function saveAll() {
+            const date = document.getElementById('att-date').value;
+            const promises = allStaff.map(s => {
+                const activeBtn = Array.from(document.querySelectorAll(`.att-btn-${s.id}`)).find(b => b.classList.contains('text-white'));
+                const status = activeBtn ? activeBtn.getAttribute('data-status') : 'present';
+                const notes = document.getElementById(`note-${s.id}`).value;
+                return window.api.markStaffAttendance({ staff_id: s.id, date, status, notes });
+            });
+
+            await Promise.all(promises);
+            showToast('Attendance saved for ' + date);
+            load();
+        }
+
+        async function printReport() {
+            const date = document.getElementById('att-date').value;
+            const month = new Date(date).toLocaleString('default', { month: 'long', year: 'numeric' });
+            // For a real report, we'd fetch the entire month's data. 
+            // For now, let's just generate a template message.
+            showToast('Generating monthly staff attendance report...', 'success');
+            // Simplified: Opens the standard report view
+            window.location.href = 'reports.html';
+        }
+
+        load();
+    </script>
+</body>
+</html>
