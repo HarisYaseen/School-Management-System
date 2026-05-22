@@ -117,7 +117,7 @@ async function connectDB() {
 function ensureTables() {
     // 1. Initial Tables (Base)
     db.run(`CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY);`);
-    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')));`);
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, role TEXT DEFAULT 'staff', permissions TEXT DEFAULT '[]', created_at TEXT DEFAULT (datetime('now')));`);
     db.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT UNIQUE NOT NULL, value TEXT);`);
     db.run(`CREATE TABLE IF NOT EXISTS class_infos (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, uuid TEXT UNIQUE NOT NULL, created_at TEXT DEFAULT (datetime('now')));`);
     db.run(`CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE NOT NULL, name TEXT NOT NULL, roll_no TEXT UNIQUE NOT NULL, class_id INTEGER, guardian_name TEXT, contact_number TEXT, monthly_fee REAL DEFAULT 0, admission_fee REAL DEFAULT 0, status TEXT DEFAULT 'active', created_at TEXT DEFAULT (datetime('now')), picture TEXT, gender TEXT DEFAULT 'Male', concession REAL DEFAULT 0);`);
@@ -206,6 +206,17 @@ function ensureTables() {
     }
 
     // 3. Post-Migration Logic
+    // Fix: Auto-upgrade the first user to super admin with all system permissions
+    try {
+        const firstUser = queryOne("SELECT id, role FROM users ORDER BY id ASC LIMIT 1");
+        if (firstUser && firstUser.role !== 'admin') {
+            logInfo(`Auto-upgrading first user (ID: ${firstUser.id}) to super admin...`);
+            run("UPDATE users SET role = 'admin', permissions = '[\"academic\",\"finance\",\"pos\",\"hr\"]' WHERE id = ?", [firstUser.id]);
+        }
+    } catch (e) {
+        logError("Failed to auto-upgrade first user to admin", e);
+    }
+
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
     // Auto-seed classes
@@ -347,7 +358,8 @@ ipcMain.handle('register', (e, { schoolName, schoolId, masterKey }) => {
     const existing = queryOne('SELECT id FROM users WHERE email = ?', [schoolId]);
     if (existing) return { success: false, error: 'School ID already in use.' };
 
-    const r = run('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', ['Admin', schoolId, hash]);
+    // Set first user to be 'admin' role with all modules permissions by default
+    const r = run("INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, 'admin', '[\"academic\",\"finance\",\"pos\",\"hr\"]')", ['Admin', schoolId, hash]);
     if (r.success) {
         run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['school_name', schoolName]);
         return { success: true };
@@ -358,7 +370,7 @@ ipcMain.handle('register', (e, { schoolName, schoolId, masterKey }) => {
 ipcMain.handle('login', (e, { schoolId, masterKey }) => {
     const bcrypt = require('crypto');
     const hash = bcrypt.createHash('sha256').update(masterKey).digest('hex');
-    const user = queryOne('SELECT id, name, email, password FROM users WHERE email = ?', [schoolId]);
+    const user = queryOne('SELECT id, name, email, password, role, permissions FROM users WHERE email = ?', [schoolId]);
     if (user && user.password === hash) {
         delete user.password;
         return { success: true, user };
