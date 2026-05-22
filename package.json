@@ -1,6 +1,6 @@
 {
   "name": "sms-connect",
-  "version": "1.1.14",
+  "version": "1.1.16",
   "description": "School Management System - Electron Edition",
   "main": "src/main.js",
   "scripts": {

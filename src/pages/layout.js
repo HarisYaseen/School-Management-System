@@ -19,16 +19,16 @@ function requireAuth() {
     } catch(e) { perms = []; }
     perms = perms.map(p => p.toLowerCase());
 
-    const path = window.location.pathname.toLowerCase();
+    const filename = window.location.pathname.split('/').pop().split('\\').pop().toLowerCase();
     
     // HARD BLOCK FOR STAFF
     if (role !== 'admin') {
         const restrictedKeywords = ['fees', 'bank', 'inventory', 'pos', 'expenses', 'staff', 'users', 'reports', 'settings'];
-        const isRestricted = restrictedKeywords.some(kw => path.includes(kw));
+        const isRestricted = restrictedKeywords.some(kw => filename.includes(kw));
         
         // If they only have 'academic' permission, they can ONLY see dashboard, reminders, and academic pages.
         if (isRestricted && !perms.includes('hr') && !perms.includes('finance') && !perms.includes('pos')) {
-            console.error('NUCLEAR BLOCK: Unauthorized Access Attempt to', path);
+            console.error('NUCLEAR BLOCK: Unauthorized Access Attempt to', filename);
             window.location.href = 'dashboard.html';
         }
     }
